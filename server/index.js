@@ -300,8 +300,10 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3001;
 
-server.listen(PORT, () => {
-    console.log(`🚀 SERVER ÇALIŞIYOR: http://localhost:${PORT}`);
-    console.log(`📝 Quiz API: http://localhost:${PORT}/api/quiz`);
+// BURASI ÖNEMLİ: İkinci parametre olarak "0.0.0.0" ekle
+server.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 SERVER ÇALIŞIYOR: http://0.0.0.0:${PORT}`);
+    console.log(`📝 Quiz API: http://0.0.0.0:${PORT}/api/quiz`);
+    // Loglarda localhost yazsa da olur ama dinlediği yer 0.0.0.0 olmalı
     console.log(`🌍 CORS Origin: ${process.env.CLIENT_URL || "http://localhost:5173"}`);
 });
