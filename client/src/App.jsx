@@ -2,16 +2,30 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useSearchParams, useParams, Link } from 'react-router-dom';
 import io from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react';
-import { Play, Users, Trophy, Zap, Crown, Star, Plus, Edit3, Trash2, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Play, Users, Trophy, Zap, Crown, Star, Plus, Edit3, Trash2, Clock, CheckCircle, XCircle, Lock, KeyRound } from 'lucide-react';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const HOST_PASSWORD = import.meta.env.VITE_HOST_PASSWORD || "340667";
 
 const socket = io.connect(SOCKET_URL);
 const API_BASE = `${API_URL}/api`;
 
 // Game Context
 const GameContext = createContext();
+
+// Auth Context for Host Protection
+const AuthContext = createContext();
+
+function AuthProvider({ children }) {
+  const [isHostAuthenticated, setIsHostAuthenticated] = useState(false);
+
+  return (
+    <AuthContext.Provider value={{ isHostAuthenticated, setIsHostAuthenticated }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
 
 function GameProvider({ children }) {
   const [gameData, setGameData] = useState({
@@ -26,6 +40,90 @@ function GameProvider({ children }) {
     <GameContext.Provider value={{ gameData, setGameData }}>
       {children}
     </GameContext.Provider>
+  );
+}
+
+// === HOST ŞİFRE GİRİŞ EKRANI ===
+function HostPasswordGate({ children }) {
+  const { isHostAuthenticated, setIsHostAuthenticated } = useContext(AuthContext);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (password === HOST_PASSWORD) {
+      setIsHostAuthenticated(true);
+      setError('');
+    } else {
+      setError('Hatalı şifre! Lütfen tekrar deneyin.');
+      setPassword('');
+    }
+  };
+
+  if (isHostAuthenticated) {
+    return children;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-indigo-700 to-blue-800 flex items-center justify-center p-6 relative overflow-hidden">
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-10 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-md space-y-6 animate-slideUp">
+        <div className="text-center mb-8">
+          <div className="inline-block p-6 bg-white/10 backdrop-blur-sm rounded-full mb-4">
+            <Lock className="w-16 h-16 text-white" />
+          </div>
+          <h1 className="text-5xl font-black text-white drop-shadow-2xl mb-2">Öğretmen Girişi</h1>
+          <p className="text-white/90 text-xl font-semibold">Bu alan şifre ile korunmaktadır</p>
+        </div>
+
+        <div className="bg-white rounded-3xl shadow-2xl p-8 space-y-5">
+          {error && (
+            <div className="bg-red-100 border-2 border-red-500 text-red-700 px-4 py-3 rounded-xl text-center font-bold flex items-center justify-center gap-2">
+              <XCircle className="w-5 h-5" />
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label className="block text-gray-700 font-bold text-sm pl-1 flex items-center gap-2">
+                <KeyRound className="w-4 h-4" />
+                Öğretmen Şifresi
+              </label>
+              <input
+                type="password"
+                placeholder="Şifrenizi girin"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border-4 border-gray-200 p-4 rounded-2xl text-center text-2xl font-black focus:outline-none focus:border-purple-500 transition-all bg-gray-50 focus:bg-white tracking-widest"
+                maxLength={10}
+                autoFocus
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-5 rounded-2xl font-black text-2xl hover:scale-105 transition-all shadow-[0_8px_0_rgb(79,70,229)] hover:shadow-[0_4px_0_rgb(79,70,229)] hover:translate-y-1 active:shadow-none active:translate-y-2 flex items-center justify-center gap-2"
+            >
+              <Lock className="w-6 h-6" />
+              GİRİŞ YAP
+            </button>
+          </form>
+
+          <button
+            onClick={() => navigate('/')}
+            className="w-full text-gray-600 hover:text-gray-800 font-bold py-2 transition-all"
+          >
+            ← Ana Sayfaya Dön
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1034,18 +1132,20 @@ function HomePage() {
 // === ANA ROUTING ===
 function App() {
   return (
-    <GameProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/host" element={<HostScreen />} />
-          <Route path="/host/create" element={<QuizCreator />} />
-          <Route path="/host/library" element={<QuizLibrary />} />
-          <Route path="/host/:gameId" element={<HostScreen />} />
-          <Route path="/play" element={<PlayerScreen />} />
-        </Routes>
-      </BrowserRouter>
-    </GameProvider>
+    <AuthProvider>
+      <GameProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/host" element={<HostPasswordGate><HostScreen /></HostPasswordGate>} />
+            <Route path="/host/create" element={<HostPasswordGate><QuizCreator /></HostPasswordGate>} />
+            <Route path="/host/library" element={<HostPasswordGate><QuizLibrary /></HostPasswordGate>} />
+            <Route path="/host/:gameId" element={<HostPasswordGate><HostScreen /></HostPasswordGate>} />
+            <Route path="/play" element={<PlayerScreen />} />
+          </Routes>
+        </BrowserRouter>
+      </GameProvider>
+    </AuthProvider>
   );
 }
 

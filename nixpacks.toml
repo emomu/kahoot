@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x"]
+
+[phases.install]
+cmds = [
+  "cd server && npm ci --omit=dev",
+  "cd client && npm ci && npm run build"
+]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "cd server && npm start"
