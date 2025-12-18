@@ -1031,40 +1031,17 @@ function PlayerScreen() {
   // PLAYING SCREEN (ANSWER BUTTONS)
   if (status === 'playing' && currentQuestion) {
     return (
-      <div className="h-screen bg-gradient-to-br from-indigo-600 to-purple-700 flex flex-col">
-        {/* Soru Başlığı */}
-        <div className="bg-white p-6 md:p-10 shadow-2xl">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm text-purple-600 font-bold">
-                Soru {currentQuestion.questionNumber} / {currentQuestion.totalQuestions}
-              </div>
-              {currentQuestion.timeLimit && (
-                <div className="flex items-center gap-2 text-sm text-orange-600 font-bold">
-                  <Clock className="w-4 h-4" />
-                  {currentQuestion.timeLimit} saniye
-                </div>
-              )}
-            </div>
-            <h2 className="text-2xl md:text-4xl font-black text-gray-800 leading-tight">
-              {currentQuestion.question}
-            </h2>
-          </div>
-        </div>
-
+      <div className="h-screen bg-gradient-to-br from-indigo-600 to-purple-700 p-4">
         {/* Cevap Butonları */}
-        <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 p-4">
+        <div className="h-full grid grid-cols-2 grid-rows-2 gap-4">
           {colors.map((color, i) => (
             <button
               key={i}
               onClick={() => sendAnswer(i)}
-              className={`${color.bg} ${color.shadow} active:shadow-none active:translate-y-2 rounded-3xl flex flex-col items-center justify-center text-white transition-all hover:scale-105 group`}
+              className={`${color.bg} ${color.shadow} active:shadow-none active:translate-y-2 rounded-3xl flex items-center justify-center text-white transition-all hover:scale-105 group`}
             >
-              <span className="text-6xl md:text-9xl drop-shadow-2xl group-hover:scale-125 transition-transform mb-2">
+              <span className="text-7xl md:text-9xl drop-shadow-2xl group-hover:scale-125 transition-transform">
                 {color.icon}
-              </span>
-              <span className="text-lg md:text-2xl font-bold bg-black/30 backdrop-blur-sm px-4 py-2 rounded-xl">
-                {currentQuestion.options[i]}
               </span>
             </button>
           ))}
