@@ -600,26 +600,6 @@ function HostScreen() {
     }
   }, [gameState, finalScores]);
 
-  // Auto-advance from question_results to scores after 5 seconds
-  useEffect(() => {
-    if (gameState === 'question_results') {
-      const timer = setTimeout(() => {
-        updateGameData({ gameState: 'scores' });
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [gameState, updateGameData]);
-
-  // Auto-advance from scores to next question after 3 seconds
-  useEffect(() => {
-    if (gameState === 'scores') {
-      const timer = setTimeout(() => {
-        socket.emit("next_question", pin);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [gameState, pin]);
-
   const startGame = () => {
     updateGameData({ gameState: 'loading' });
     socket.emit("start_game", pin);
@@ -919,8 +899,13 @@ function HostScreen() {
           </div>
         </div>
 
-        <div className="text-center text-white mt-8">
-          <p className="text-2xl font-semibold animate-pulse">5 saniye sonra skor tablosuna geçiliyor...</p>
+        <div className="text-center mt-8">
+          <button
+            onClick={() => updateGameData({ gameState: 'scores' })}
+            className="px-12 py-5 bg-white text-purple-600 rounded-full font-black text-2xl shadow-[0_8px_0_rgba(255,255,255,0.3)] hover:shadow-[0_4px_0_rgba(255,255,255,0.3)] hover:translate-y-1 active:shadow-none active:translate-y-2 transition-all"
+          >
+            Skor Tablosuna Geç →
+          </button>
         </div>
       </div>
     );
@@ -951,7 +936,12 @@ function HostScreen() {
                 ))}
             </div>
           </div>
-          <p className="text-2xl font-semibold animate-pulse">3 saniye sonra devam ediliyor...</p>
+          <button
+            onClick={() => socket.emit("next_question", pin)}
+            className="px-12 py-5 bg-white text-orange-600 rounded-full font-black text-2xl shadow-[0_8px_0_rgba(255,255,255,0.3)] hover:shadow-[0_4px_0_rgba(255,255,255,0.3)] hover:translate-y-1 active:shadow-none active:translate-y-2 transition-all"
+          >
+            {currentQuestion?.questionNumber < currentQuestion?.totalQuestions ? 'Sonraki Soru →' : 'Sonuçları Göster 🏆'}
+          </button>
         </div>
       </div>
     );
