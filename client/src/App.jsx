@@ -1422,20 +1422,20 @@ function GameHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchGameHistory = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/history`);
+        const data = await response.json();
+        setGames(data);
+      } catch (error) {
+        console.error('Oyun geçmişi yüklenirken hata:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchGameHistory();
   }, []);
-
-  const fetchGameHistory = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/history`);
-      const data = await response.json();
-      setGames(data);
-    } catch (error) {
-      console.error('Oyun geçmişi yüklenirken hata:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -1542,20 +1542,20 @@ function GameStatistics() {
   const [selectedQuestion, setSelectedQuestion] = useState(0);
 
   useEffect(() => {
+    const fetchGameData = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/history/${historyId}`);
+        const data = await response.json();
+        setGameData(data);
+      } catch (error) {
+        console.error('Oyun detayı yüklenirken hata:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchGameData();
   }, [historyId]);
-
-  const fetchGameData = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/history/${historyId}`);
-      const data = await response.json();
-      setGameData(data);
-    } catch (error) {
-      console.error('Oyun detayı yüklenirken hata:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
