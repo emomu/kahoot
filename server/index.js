@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');
 const connectDB = require('./config/database');
 const Quiz = require('./models/Quiz');
 
@@ -12,6 +13,9 @@ connectDB();
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the React app (production)
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -90,6 +94,11 @@ app.delete('/api/quiz/:quizId', async (req, res) => {
         console.error('Quiz silme hatası:', error);
         res.status(500).json({ error: 'Quiz silinemedi' });
     }
+});
+
+// Catch-all handler: React Router için (tüm API route'larından sonra!)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 // === SOCKET.IO EVENTS ===
