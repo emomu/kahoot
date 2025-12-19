@@ -354,10 +354,6 @@ function QuizLibrary() {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadQuizzes();
-  }, []);
-
   const loadQuizzes = async () => {
     try {
       const response = await fetch(`${API_BASE}/quiz/list`);
@@ -369,6 +365,11 @@ function QuizLibrary() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadQuizzes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const deleteQuiz = async (quizId) => {
     if (confirm('Bu quiz\'i silmek istediğinize emin misiniz?')) {
@@ -601,6 +602,16 @@ function HostScreen() {
       };
     }
   }, [gameState, finalScores]);
+
+  // Auto-advance from question_results to scores after 5 seconds
+  useEffect(() => {
+    if (gameState === 'question_results') {
+      const timer = setTimeout(() => {
+        setGameData(prev => ({ ...prev, gameState: 'scores' }));
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState, setGameData]);
 
   const startGame = () => {
     setGameData(prev => ({ ...prev, gameState: 'loading' }));
@@ -837,16 +848,6 @@ function HostScreen() {
       { bg: 'bg-yellow-500', name: 'Sarı', icon: '⭐' },
       { bg: 'bg-green-500', name: 'Yeşil', icon: '✅' }
     ];
-
-    // Auto-advance after 5 seconds
-    useEffect(() => {
-      if (gameState === 'question_results') {
-        const timer = setTimeout(() => {
-          setGameData(prev => ({ ...prev, gameState: 'scores' }));
-        }, 5000);
-        return () => clearTimeout(timer);
-      }
-    }, [gameState, setGameData]);
 
     return (
       <div className="h-screen bg-purple-600 flex flex-col p-8">
