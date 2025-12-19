@@ -192,39 +192,27 @@ io.on('connection', (socket) => {
         const game = games[pin];
         if (!game) return;
 
-        // Önce skorları göster
-        io.to(pin).emit('show_scores', {
-            scores: game.scores,
-            players: game.players.map(p => ({
-                username: p.username,
-                score: p.score
-            })).sort((a, b) => b.score - a.score)
-        });
+        game.currentQuestionIndex++;
+        const idx = game.currentQuestionIndex;
 
-        // 5 saniye sonra sonraki soruya geç
-        setTimeout(() => {
-            game.currentQuestionIndex++;
-            const idx = game.currentQuestionIndex;
+        if (idx < game.questions.length) {
+            game.answers[idx] = []; // Yeni soru için cevapları sıfırla
+            io.to(pin).emit('new_question', {
+                ...game.questions[idx],
+                questionNumber: idx + 1,
+                totalQuestions: game.questions.length
+            });
+        } else {
+            // Oyun bitti
+            const finalScores = game.players
+                .map(p => ({ username: p.username, score: p.score }))
+                .sort((a, b) => b.score - a.score);
 
-            if (idx < game.questions.length) {
-                game.answers[idx] = []; // Yeni soru için cevapları sıfırla
-                io.to(pin).emit('new_question', {
-                    ...game.questions[idx],
-                    questionNumber: idx + 1,
-                    totalQuestions: game.questions.length
-                });
-            } else {
-                // Oyun bitti
-                const finalScores = game.players
-                    .map(p => ({ username: p.username, score: p.score }))
-                    .sort((a, b) => b.score - a.score);
-
-                io.to(pin).emit('game_over', {
-                    scores: finalScores,
-                    winner: finalScores[0]
-                });
-            }
-        }, 5000);
+            io.to(pin).emit('game_over', {
+                scores: finalScores,
+                winner: finalScores[0]
+            });
+        }
     });
 
     // --- OYUNCU EVENTLERİ ---

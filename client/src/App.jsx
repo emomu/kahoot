@@ -891,8 +891,18 @@ function HostScreen() {
     );
   }
 
-  // SCORES SCREEN
+  // SCORES SCREEN - Auto advance after 3 seconds
   if (gameState === 'scores') {
+    // Otomatik olarak sonraki soruya geç
+    useEffect(() => {
+      if (gameState === 'scores') {
+        const timer = setTimeout(() => {
+          nextQuestion();
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+    }, [gameState]);
+
     return (
       <div className="h-screen bg-orange-500 flex items-center justify-center p-8">
         <div className="text-center text-white space-y-8 animate-fadeIn max-w-4xl w-full">
@@ -914,7 +924,7 @@ function HostScreen() {
                 ))}
             </div>
           </div>
-          <p className="text-2xl font-semibold">Sonraki soruya geçiliyor...</p>
+          <p className="text-2xl font-semibold animate-pulse">3 saniye sonra devam ediliyor...</p>
         </div>
       </div>
     );
