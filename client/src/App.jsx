@@ -535,7 +535,7 @@ function HostScreen() {
   }, [setGameData]);
 
   const startGame = () => {
-    setGameState('loading');
+    setGameData(prev => ({ ...prev, gameState: 'loading' }));
     socket.emit("start_game", pin);
   };
 
