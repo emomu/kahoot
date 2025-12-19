@@ -6,6 +6,7 @@ const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/database');
 const Quiz = require('./models/Quiz');
+const GameHistory = require('./models/GameHistory');
 
 // MongoDB bağlantısı
 connectDB();
@@ -96,6 +97,36 @@ app.delete('/api/quiz/:quizId', async (req, res) => {
     }
 });
 
+// === GAME HISTORY API ENDPOINTS ===
+
+// Tüm oyun geçmişini getir (en yeniden en eskiye)
+app.get('/api/history', async (req, res) => {
+    try {
+        const history = await GameHistory.find()
+            .sort({ createdAt: -1 })
+            .select('pin quizTitle startedAt finishedAt totalPlayers finalScores')
+            .limit(50); // Son 50 oyun
+        res.json(history);
+    } catch (error) {
+        console.error('Oyun geçmişi getirme hatası:', error);
+        res.status(500).json({ error: 'Oyun geçmişi getirilemedi' });
+    }
+});
+
+// Belirli bir oyunun detaylı istatistiklerini getir
+app.get('/api/history/:historyId', async (req, res) => {
+    try {
+        const history = await GameHistory.findById(req.params.historyId);
+        if (!history) {
+            return res.status(404).json({ error: 'Oyun bulunamadı' });
+        }
+        res.json(history);
+    } catch (error) {
+        console.error('Oyun detayı getirme hatası:', error);
+        res.status(500).json({ error: 'Oyun detayı getirilemedi' });
+    }
+});
+
 // Catch-all handler: React Router için (tüm API route'larından sonra!)
 app.use((req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist/index.html'));
@@ -108,17 +139,20 @@ io.on('connection', (socket) => {
 
     // --- HOST EVENTLERİ ---
 
-    socket.on('create_game', ({ questions, quizTitle }) => {
+    socket.on('create_game', ({ questions, quizTitle, quizId }) => {
         const pin = generatePin();
         games[pin] = {
             hostId: socket.id,
             quizTitle: quizTitle || 'Kahoot Quiz',
+            quizId: quizId,
             players: [],
             questions: questions,
             currentQuestionIndex: -1, // -1 = lobby, 0+ = soru indeksi
             gameState: 'LOBBY',
             scores: {},
-            answers: {} // Her soru için cevapları sakla
+            answers: {}, // Her soru için cevapları sakla
+            startedAt: null,
+            questionDetails: [] // Her soru için detaylı cevap bilgileri
         };
         socket.join(pin);
         socket.emit('game_created', pin);
@@ -130,6 +164,17 @@ io.on('connection', (socket) => {
         if (game && game.gameState === 'LOBBY') {
             game.gameState = 'QUESTION';
             game.currentQuestionIndex = 0;
+            game.startedAt = new Date(); // Oyun başlangıç zamanını kaydet
+
+            // Her soru için detay objeleri oluştur
+            game.questionDetails = game.questions.map(q => ({
+                questionText: q.question,
+                answers: q.answers,
+                correctAnswer: q.correctAnswer,
+                timeLimit: q.timeLimit,
+                playerAnswers: []
+            }));
+
             io.to(pin).emit('game_started');
 
             // İlk soruyu gönder
@@ -243,15 +288,28 @@ io.on('connection', (socket) => {
         // Doğru cevap kontrolü
         const isCorrect = currentQ.correctAnswer === answerIndex;
 
+        // Puanlama
+        let totalPoints = 0;
         if (isCorrect) {
             // Puanlama: Doğru cevap + hız bonusu
             const basePoints = 1000;
             const timeBonus = Math.floor(timeLeft * 10);
-            const totalPoints = basePoints + timeBonus;
+            totalPoints = basePoints + timeBonus;
 
             player.score += totalPoints;
             game.scores[player.username] = player.score;
+        }
 
+        // Detaylı cevabı kaydet
+        game.questionDetails[game.currentQuestionIndex].playerAnswers.push({
+            username: player.username,
+            answerIndex: answerIndex,
+            timeLeft: timeLeft,
+            isCorrect: isCorrect,
+            pointsEarned: totalPoints
+        });
+
+        if (isCorrect) {
             socket.emit('answer_result', {
                 correct: true,
                 points: totalPoints,
@@ -277,6 +335,48 @@ io.on('connection', (socket) => {
             totalAnswered: game.answers[game.currentQuestionIndex].length,
             totalPlayers: game.players.length
         });
+    });
+
+    // Oyun istatistiklerini kaydet
+    socket.on('save_game_stats', async (pin) => {
+        const game = games[pin];
+        if (!game || game.hostId !== socket.id) return;
+
+        try {
+            const finalScores = game.players
+                .map((p, index) => ({
+                    username: p.username,
+                    score: p.score,
+                    rank: index + 1,
+                    correctAnswers: game.questionDetails.reduce((count, q) => {
+                        const playerAnswer = q.playerAnswers.find(pa => pa.username === p.username);
+                        return count + (playerAnswer?.isCorrect ? 1 : 0);
+                    }, 0),
+                    totalQuestions: game.questions.length
+                }))
+                .sort((a, b) => b.score - a.score)
+                .map((p, index) => ({ ...p, rank: index + 1 }));
+
+            const gameHistory = new GameHistory({
+                pin: pin,
+                quizTitle: game.quizTitle,
+                quizId: game.quizId,
+                startedAt: game.startedAt,
+                finishedAt: new Date(),
+                totalPlayers: game.players.length,
+                questions: game.questionDetails,
+                finalScores: finalScores
+            });
+
+            await gameHistory.save();
+            console.log(`Oyun istatistikleri kaydedildi: ${pin}`);
+
+            // Client'a istatistik ID'sini gönder
+            socket.emit('stats_saved', { historyId: gameHistory._id });
+        } catch (error) {
+            console.error('İstatistik kaydetme hatası:', error);
+            socket.emit('stats_save_error', { message: 'İstatistikler kaydedilemedi' });
+        }
     });
 
     socket.on('disconnect', () => {

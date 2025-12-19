@@ -399,7 +399,11 @@ function QuizLibrary() {
     };
 
     socket.once('game_created', handleGameCreated);
-    socket.emit('create_game', { questions: quiz.questions, quizTitle: quiz.title });
+    socket.emit('create_game', {
+      questions: quiz.questions,
+      quizTitle: quiz.title,
+      quizId: quiz._id || quiz.id
+    });
   };
 
   return (
@@ -417,6 +421,13 @@ function QuizLibrary() {
                 className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all"
               >
                 ← Geri
+              </Link>
+              <Link
+                to="/history"
+                className="px-6 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-all flex items-center gap-2"
+              >
+                <Trophy className="w-5 h-5" />
+                Oyun Geçmişi
               </Link>
               <Link
                 to="/host/create"
@@ -534,6 +545,16 @@ function HostScreen() {
       }));
     });
 
+    socket.on("stats_saved", (data) => {
+      // İstatistikler kaydedildi, detay sayfasına yönlendir
+      navigate(`/history/${data.historyId}`);
+    });
+
+    socket.on("stats_save_error", (data) => {
+      console.error('İstatistik kaydetme hatası:', data.message);
+      alert('İstatistikler kaydedilemedi!');
+    });
+
     return () => {
       socket.off("game_created");
       socket.off("player_joined");
@@ -541,18 +562,29 @@ function HostScreen() {
       socket.off("answer_stats");
       socket.off("show_scores");
       socket.off("game_over");
+      socket.off("stats_saved");
+      socket.off("stats_save_error");
     };
-  }, [setGameData]);
+  }, [setGameData, navigate]);
 
   // Host timer countdown
   useEffect(() => {
     if (gameState === 'game' && hostTimeLeft > 0) {
       const timer = setInterval(() => {
-        setHostTimeLeft(prev => prev > 0 ? prev - 1 : 0);
+        setHostTimeLeft(prev => {
+          if (prev <= 1) {
+            // Süre bitti, stats ekranına geç
+            setTimeout(() => {
+              setGameData(prevData => ({ ...prevData, gameState: 'question_results' }));
+            }, 500);
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [gameState, currentQuestion]);
+  }, [gameState, currentQuestion, setGameData]);
 
   // Podium animation effect
   useEffect(() => {
@@ -796,6 +828,82 @@ function HostScreen() {
     );
   }
 
+  // QUESTION RESULTS SCREEN - Shows answer statistics
+  if (gameState === 'question_results' && currentQuestion) {
+    const totalAnswers = Object.values(answerStats).reduce((a, b) => a + b, 0);
+    const colors = [
+      { bg: 'bg-red-500', name: 'Kırmızı', icon: '🔺' },
+      { bg: 'bg-blue-500', name: 'Mavi', icon: '🔷' },
+      { bg: 'bg-yellow-500', name: 'Sarı', icon: '⭐' },
+      { bg: 'bg-green-500', name: 'Yeşil', icon: '✅' }
+    ];
+
+    // Auto-advance after 5 seconds
+    useEffect(() => {
+      if (gameState === 'question_results') {
+        const timer = setTimeout(() => {
+          setGameData(prev => ({ ...prev, gameState: 'scores' }));
+        }, 5000);
+        return () => clearTimeout(timer);
+      }
+    }, [gameState, setGameData]);
+
+    return (
+      <div className="h-screen bg-purple-600 flex flex-col p-8">
+        <div className="text-white text-center mb-8">
+          <h1 className="text-5xl font-black mb-4">Cevap Dağılımı</h1>
+          <p className="text-2xl font-semibold">{totalAnswers} / {players.length} kişi cevapladı</p>
+        </div>
+
+        <div className="flex-1 flex flex-col justify-center max-w-6xl mx-auto w-full">
+          <div className="bg-white rounded-3xl p-8 mb-4">
+            <h2 className="text-3xl font-black text-gray-800 mb-6">{currentQuestion.question}</h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            {currentQuestion.answers.map((answer, index) => {
+              const count = answerStats[index] || 0;
+              const percentage = totalAnswers > 0 ? Math.round((count / totalAnswers) * 100) : 0;
+              const isCorrect = index === currentQuestion.correctAnswer;
+
+              return (
+                <div
+                  key={index}
+                  className={`${colors[index].bg} rounded-3xl p-6 text-white relative overflow-hidden transition-all duration-500`}
+                >
+                  {/* Background bar showing percentage */}
+                  <div
+                    className="absolute inset-0 bg-white/30 transition-all duration-1000"
+                    style={{ width: `${percentage}%` }}
+                  />
+
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-4xl">{colors[index].icon}</span>
+                        <span className="font-bold text-xl">{colors[index].name}</span>
+                        {isCorrect && <span className="text-3xl">✅</span>}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-5xl font-black">{count}</div>
+                        <div className="text-xl font-bold">{percentage}%</div>
+                      </div>
+                    </div>
+                    <div className="text-lg font-semibold opacity-90">{answer}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="text-center text-white mt-8">
+          <p className="text-2xl font-semibold animate-pulse">5 saniye sonra skor tablosuna geçiliyor...</p>
+        </div>
+      </div>
+    );
+  }
+
   // SCORES SCREEN
   if (gameState === 'scores') {
     return (
@@ -911,6 +1019,19 @@ function HostScreen() {
             </div>
           </div>
         )}
+
+        {/* Finish Game Button - appears after podium animation */}
+        {podiumStep >= 3 && (
+          <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 animate-fadeIn">
+            <button
+              onClick={() => socket.emit('save_game_stats', pin)}
+              className="px-12 py-5 bg-green-600 text-white rounded-full font-black text-2xl shadow-[0_8px_0_rgb(22,163,74)] hover:shadow-[0_4px_0_rgb(22,163,74)] hover:translate-y-1 active:shadow-none active:translate-y-2 transition-all flex items-center gap-3"
+            >
+              <Trophy className="w-8 h-8" />
+              Oyunu Bitir ve İstatistikleri Gör
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -995,12 +1116,8 @@ function PlayerScreen() {
         setTimeLeft(prev => {
           if (prev <= 1) {
             clearInterval(timer);
-            // Süre bitti, cevap verilmemiş olarak işaretle
+            // Süre bitti - sadece time_up ekranı göster
             setStatus('time_up');
-            setTimeout(() => {
-              setStatus('answered');
-              setAnswerResult({ correct: false, message: 'Süre doldu!' });
-            }, 1500);
             return 0;
           }
           return prev - 1;
@@ -1298,6 +1415,344 @@ function HomePage() {
   );
 }
 
+// === GEÇMİŞ OYUNLAR LİSTESİ ===
+function GameHistory() {
+  const navigate = useNavigate();
+  const [games, setGames] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchGameHistory();
+  }, []);
+
+  const fetchGameHistory = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/history`);
+      const data = await response.json();
+      setGames(data);
+    } catch (error) {
+      console.error('Oyun geçmişi yüklenirken hata:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDuration = (start, end) => {
+    const duration = new Date(end) - new Date(start);
+    const minutes = Math.floor(duration / 60000);
+    const seconds = Math.floor((duration % 60000) / 1000);
+    return `${minutes}dk ${seconds}sn`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-indigo-700 flex items-center justify-center">
+        <div className="text-white text-3xl font-bold">Yükleniyor...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-indigo-700 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 mb-6">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-4xl font-black text-gray-800">Oyun Geçmişi</h1>
+              <p className="text-gray-600 mt-2">Tüm geçmiş oyunların detaylı istatistiklerini görüntüle</p>
+            </div>
+            <button
+              onClick={() => navigate('/host/library')}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
+            >
+              Kütüphaneye Dön
+            </button>
+          </div>
+
+          {games.length === 0 ? (
+            <div className="text-center py-16">
+              <Trophy className="w-24 h-24 mx-auto text-gray-300 mb-4" />
+              <p className="text-xl text-gray-500">Henüz oynanmış oyun yok</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {games.map((game) => (
+                <div
+                  key={game._id}
+                  onClick={() => navigate(`/history/${game._id}`)}
+                  className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-indigo-300"
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-black text-gray-800 mb-2">{game.quizTitle}</h3>
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {formatDate(game.finishedAt)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {game.totalPlayers} oyuncu
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Zap className="w-4 h-4" />
+                          {formatDuration(game.startedAt, game.finishedAt)}
+                        </span>
+                        <span className="font-mono text-indigo-600 font-bold">
+                          PIN: {game.pin}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {game.finalScores && game.finalScores[0] && (
+                        <div className="bg-yellow-400 text-gray-900 px-4 py-2 rounded-xl font-bold">
+                          🏆 {game.finalScores[0].username}
+                          <div className="text-sm">{game.finalScores[0].score} puan</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// === DETAYLI OYUN İSTATİSTİKLERİ ===
+function GameStatistics() {
+  const { historyId } = useParams();
+  const navigate = useNavigate();
+  const [gameData, setGameData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedQuestion, setSelectedQuestion] = useState(0);
+
+  useEffect(() => {
+    fetchGameData();
+  }, [historyId]);
+
+  const fetchGameData = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/history/${historyId}`);
+      const data = await response.json();
+      setGameData(data);
+    } catch (error) {
+      console.error('Oyun detayı yüklenirken hata:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-indigo-700 flex items-center justify-center">
+        <div className="text-white text-3xl font-bold">Yükleniyor...</div>
+      </div>
+    );
+  }
+
+  if (!gameData) {
+    return (
+      <div className="min-h-screen bg-indigo-700 flex items-center justify-center">
+        <div className="text-white text-3xl font-bold">Oyun bulunamadı</div>
+      </div>
+    );
+  }
+
+  const colors = [
+    { bg: 'bg-red-500', name: 'Kırmızı', icon: '🔺' },
+    { bg: 'bg-blue-500', name: 'Mavi', icon: '🔷' },
+    { bg: 'bg-yellow-500', name: 'Sarı', icon: '⭐' },
+    { bg: 'bg-green-500', name: 'Yeşil', icon: '✅' }
+  ];
+
+  const currentQ = gameData.questions[selectedQuestion];
+
+  return (
+    <div className="min-h-screen bg-indigo-700 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-white rounded-3xl shadow-2xl p-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-4xl font-black text-gray-800">{gameData.quizTitle}</h1>
+              <p className="text-gray-600 mt-2">
+                {new Date(gameData.finishedAt).toLocaleDateString('tr-TR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/history')}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
+            >
+              Geçmişe Dön
+            </button>
+          </div>
+        </div>
+
+        {/* Final Scores */}
+        <div className="bg-white rounded-3xl shadow-2xl p-6">
+          <h2 className="text-3xl font-black text-gray-800 mb-6">🏆 Final Sıralaması</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            {gameData.finalScores.slice(0, 3).map((player, index) => (
+              <div
+                key={index}
+                className={`rounded-2xl p-6 text-white ${
+                  index === 0 ? 'bg-yellow-400 text-gray-900' :
+                  index === 1 ? 'bg-gray-400' :
+                  'bg-orange-600'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-5xl mb-3">
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                  </div>
+                  <div className="font-black text-2xl mb-2">{player.username}</div>
+                  <div className="text-xl font-bold">{player.score} puan</div>
+                  <div className="text-sm mt-1">{player.correctAnswers}/{player.totalQuestions} doğru</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {gameData.finalScores.length > 3 && (
+            <div className="mt-6 space-y-2">
+              <h3 className="font-bold text-gray-700 mb-3">Diğer Oyuncular</h3>
+              {gameData.finalScores.slice(3).map((player, index) => (
+                <div key={index} className="bg-gray-100 rounded-xl p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-gray-600">{index + 4}.</span>
+                    <span className="font-bold text-gray-800">{player.username}</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-gray-800">{player.score} puan</div>
+                    <div className="text-sm text-gray-600">{player.correctAnswers}/{player.totalQuestions} doğru</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Question Stats */}
+        <div className="bg-white rounded-3xl shadow-2xl p-6">
+          <h2 className="text-3xl font-black text-gray-800 mb-6">📊 Soru Bazlı İstatistikler</h2>
+
+          {/* Question Selector */}
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+            {gameData.questions.map((q, index) => (
+              <button
+                key={index}
+                onClick={() => setSelectedQuestion(index)}
+                className={`px-4 py-2 rounded-xl font-bold whitespace-nowrap transition-all ${
+                  selectedQuestion === index
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Soru {index + 1}
+              </button>
+            ))}
+          </div>
+
+          {/* Question Detail */}
+          <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">{currentQ.questionText}</h3>
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              {currentQ.answers.map((answer, index) => {
+                const answersCount = currentQ.playerAnswers.filter(pa => pa.answerIndex === index).length;
+                const percentage = currentQ.playerAnswers.length > 0
+                  ? Math.round((answersCount / currentQ.playerAnswers.length) * 100)
+                  : 0;
+                const isCorrect = index === currentQ.correctAnswer;
+
+                return (
+                  <div
+                    key={index}
+                    className={`${colors[index].bg} rounded-xl p-4 text-white relative overflow-hidden`}
+                  >
+                    <div
+                      className="absolute inset-0 bg-white/30 transition-all"
+                      style={{ width: `${percentage}%` }}
+                    />
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{colors[index].icon}</span>
+                          <span className="font-bold">{colors[index].name}</span>
+                          {isCorrect && <span className="text-2xl">✅</span>}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-3xl font-black">{answersCount}</div>
+                          <div className="text-sm font-bold">{percentage}%</div>
+                        </div>
+                      </div>
+                      <div className="text-sm font-semibold">{answer}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Player Answers for this Question */}
+            <h4 className="text-xl font-bold text-gray-800 mb-4">Oyuncu Cevapları</h4>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {currentQ.playerAnswers.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">Bu soruya kimse cevap vermedi</p>
+              ) : (
+                currentQ.playerAnswers.map((pa, index) => (
+                  <div
+                    key={index}
+                    className={`rounded-lg p-3 flex items-center justify-between ${
+                      pa.isCorrect ? 'bg-green-100' : 'bg-red-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{pa.isCorrect ? '✅' : '❌'}</span>
+                      <span className="font-bold text-gray-800">{pa.username}</span>
+                      <span className="text-sm text-gray-600">
+                        {colors[pa.answerIndex].name}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-600">
+                        {pa.timeLeft}s kaldı
+                      </div>
+                      {pa.isCorrect && (
+                        <div className="text-sm font-bold text-green-700">
+                          +{pa.pointsEarned} puan
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // === ANA ROUTING ===
 function App() {
   return (
@@ -1310,6 +1765,8 @@ function App() {
             <Route path="/host/create" element={<HostPasswordGate><QuizCreator /></HostPasswordGate>} />
             <Route path="/host/library" element={<HostPasswordGate><QuizLibrary /></HostPasswordGate>} />
             <Route path="/host/:gameId" element={<HostPasswordGate><HostScreen /></HostPasswordGate>} />
+            <Route path="/history" element={<HostPasswordGate><GameHistory /></HostPasswordGate>} />
+            <Route path="/history/:historyId" element={<HostPasswordGate><GameStatistics /></HostPasswordGate>} />
             <Route path="/play" element={<PlayerScreen />} />
           </Routes>
         </BrowserRouter>
