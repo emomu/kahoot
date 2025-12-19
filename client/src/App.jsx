@@ -605,7 +605,7 @@ function HostScreen() {
 
   // LOBBY SCREEN
   if (gameState === 'lobby') {
-    const joinUrl = `http://${window.location.hostname}:5173/play?pin=${pin}`;
+    const joinUrl = `${window.location.origin}/play?pin=${pin}`;
 
     return (
       <div className="h-screen bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex flex-col">
