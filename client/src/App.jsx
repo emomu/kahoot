@@ -33,7 +33,9 @@ function GameProvider({ children }) {
     players: [],
     gameState: 'select',
     currentQuestion: null,
-    answerStats: {}
+    answerStats: {},
+    finalScores: [],
+    winner: null
   });
 
   return (
@@ -487,7 +489,9 @@ function HostScreen() {
   const { gameId } = useParams();
   const navigate = useNavigate();
   const { gameData, setGameData } = useContext(GameContext);
-  const { pin, players, gameState, currentQuestion, answerStats } = gameData;
+  const { pin, players, gameState, currentQuestion, answerStats, finalScores, winner } = gameData;
+  const [hostTimeLeft, setHostTimeLeft] = useState(0);
+  const [podiumStep, setPodiumStep] = useState(0);
 
   useEffect(() => {
     socket.on("game_created", (newPin) => {
@@ -510,6 +514,7 @@ function HostScreen() {
         currentQuestion: question,
         answerStats: {}
       }));
+      setHostTimeLeft(question.timeLimit || 20);
     });
 
     socket.on("answer_stats", (data) => {
@@ -521,7 +526,12 @@ function HostScreen() {
     });
 
     socket.on("game_over", (data) => {
-      setGameData(prev => ({ ...prev, gameState: 'result' }));
+      setGameData(prev => ({
+        ...prev,
+        gameState: 'result',
+        finalScores: data.scores,
+        winner: data.winner
+      }));
     });
 
     return () => {
@@ -533,6 +543,32 @@ function HostScreen() {
       socket.off("game_over");
     };
   }, [setGameData]);
+
+  // Host timer countdown
+  useEffect(() => {
+    if (gameState === 'game' && hostTimeLeft > 0) {
+      const timer = setInterval(() => {
+        setHostTimeLeft(prev => prev > 0 ? prev - 1 : 0);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [gameState, currentQuestion]);
+
+  // Podium animation effect
+  useEffect(() => {
+    if (gameState === 'result' && finalScores && finalScores.length > 0) {
+      setPodiumStep(0);
+      const timer1 = setTimeout(() => setPodiumStep(1), 1000);   // 3. sıra
+      const timer2 = setTimeout(() => setPodiumStep(2), 2500);   // 2. sıra
+      const timer3 = setTimeout(() => setPodiumStep(3), 4000);   // 1. sıra (kazanan)
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
+    }
+  }, [gameState, finalScores]);
 
   const startGame = () => {
     setGameData(prev => ({ ...prev, gameState: 'loading' }));
@@ -699,9 +735,15 @@ function HostScreen() {
               <span className="text-purple-600 font-bold text-lg">
                 Soru {currentQuestion.questionNumber} / {currentQuestion.totalQuestions}
               </span>
-              <span className="text-gray-600 font-semibold">
-                {Object.values(answerStats).reduce((a, b) => a + b, 0)} / {players.length} cevap
-              </span>
+              <div className="flex items-center gap-6">
+                <div className={`flex items-center gap-2 font-black text-3xl ${hostTimeLeft <= 5 ? 'text-red-600' : hostTimeLeft <= 10 ? 'text-orange-600' : 'text-green-600'} transition-colors`}>
+                  <Clock className="w-8 h-8" />
+                  {hostTimeLeft}s
+                </div>
+                <span className="text-gray-600 font-semibold">
+                  {Object.values(answerStats).reduce((a, b) => a + b, 0)} / {players.length} cevap
+                </span>
+              </div>
             </div>
             <h2 className="text-5xl font-black text-gray-800 leading-tight text-center animate-fadeIn">
               {currentQuestion.question}
@@ -783,16 +825,97 @@ function HostScreen() {
     );
   }
 
-  // RESULT SCREEN
-  return (
-    <div className="h-screen bg-orange-500 flex items-center justify-center">
-      <div className="text-center text-white space-y-8 animate-fadeIn">
-        <Trophy className="w-32 h-32 mx-auto animate-bounce text-yellow-200" />
-        <h1 className="text-7xl font-black drop-shadow-2xl">Oyun Bitti!</h1>
-        <p className="text-3xl font-semibold">Kazananlar belirleniyor...</p>
+  // RESULT SCREEN - Sinematik Podium
+  if (gameState === 'result') {
+    const top3 = finalScores?.slice(0, 3) || [];
+
+    return (
+      <div className="h-screen bg-indigo-700 flex flex-col items-center justify-center p-8 relative overflow-hidden">
+        {/* Confetti effect */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-yellow-400 animate-ping"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                opacity: 0.6
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="text-center text-white space-y-8 mb-12 z-10">
+          <Trophy className="w-24 h-24 mx-auto animate-bounce text-yellow-300" />
+          <h1 className="text-6xl font-black drop-shadow-2xl">🎉 KAZANANLAR 🎉</h1>
+        </div>
+
+        {/* Podium */}
+        <div className="flex items-end justify-center gap-8 z-10">
+          {/* 2nd Place */}
+          {top3[1] && (
+            <div className={`flex flex-col items-center transition-all duration-1000 ${podiumStep >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
+              <div className="bg-gray-400 text-white rounded-full w-20 h-20 flex items-center justify-center text-4xl mb-4 shadow-2xl animate-bounce">
+                🥈
+              </div>
+              <div className="bg-gray-400 rounded-t-3xl px-8 py-12 text-center shadow-2xl" style={{ height: '200px' }}>
+                <div className="text-white font-black text-3xl mb-2">{top3[1].username}</div>
+                <div className="text-gray-100 text-2xl font-bold">{top3[1].score} puan</div>
+                <div className="text-gray-200 text-6xl font-black mt-4">2</div>
+              </div>
+            </div>
+          )}
+
+          {/* 1st Place - Winner */}
+          {top3[0] && (
+            <div className={`flex flex-col items-center transition-all duration-1000 ${podiumStep >= 3 ? 'opacity-100 translate-y-0 scale-110' : 'opacity-0 translate-y-20'}`}>
+              <div className="bg-yellow-400 text-white rounded-full w-28 h-28 flex items-center justify-center text-5xl mb-4 shadow-2xl animate-bounce">
+                🥇
+              </div>
+              <div className="bg-yellow-400 rounded-t-3xl px-10 py-16 text-center shadow-2xl relative" style={{ height: '280px' }}>
+                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-6xl animate-pulse">👑</div>
+                <div className="text-gray-900 font-black text-4xl mb-2">{top3[0].username}</div>
+                <div className="text-yellow-900 text-3xl font-bold">{top3[0].score} puan</div>
+                <div className="text-yellow-900 text-7xl font-black mt-4">1</div>
+              </div>
+            </div>
+          )}
+
+          {/* 3rd Place */}
+          {top3[2] && (
+            <div className={`flex flex-col items-center transition-all duration-1000 ${podiumStep >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
+              <div className="bg-orange-600 text-white rounded-full w-20 h-20 flex items-center justify-center text-4xl mb-4 shadow-2xl animate-bounce">
+                🥉
+              </div>
+              <div className="bg-orange-600 rounded-t-3xl px-8 py-8 text-center shadow-2xl" style={{ height: '160px' }}>
+                <div className="text-white font-black text-3xl mb-2">{top3[2].username}</div>
+                <div className="text-orange-100 text-2xl font-bold">{top3[2].score} puan</div>
+                <div className="text-orange-200 text-6xl font-black mt-2">3</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Other players */}
+        {finalScores && finalScores.length > 3 && podiumStep >= 3 && (
+          <div className="mt-12 z-10 animate-fadeIn">
+            <h3 className="text-white text-2xl font-bold mb-4 text-center">Diğer Oyuncular</h3>
+            <div className="flex flex-wrap gap-4 justify-center max-w-4xl">
+              {finalScores.slice(3).map((player, i) => (
+                <div key={i} className="bg-white/20 backdrop-blur-sm rounded-xl px-6 py-3 text-white">
+                  <span className="font-bold">{i + 4}.</span> {player.username} - {player.score} puan
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }
 
 // === PLAYER (OYUNCU) EKRANI ===
@@ -872,6 +995,12 @@ function PlayerScreen() {
         setTimeLeft(prev => {
           if (prev <= 1) {
             clearInterval(timer);
+            // Süre bitti, cevap verilmemiş olarak işaretle
+            setStatus('time_up');
+            setTimeout(() => {
+              setStatus('answered');
+              setAnswerResult({ correct: false, message: 'Süre doldu!' });
+            }, 1500);
             return 0;
           }
           return prev - 1;
@@ -965,6 +1094,24 @@ function PlayerScreen() {
             <div className="w-3 h-3 bg-white rounded-full animate-bounce"></div>
             <div className="w-3 h-3 bg-white rounded-full animate-bounce delay-150"></div>
             <div className="w-3 h-3 bg-white rounded-full animate-bounce delay-300"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // TIME UP SCREEN
+  if (status === 'time_up') {
+    return (
+      <div className="h-screen bg-orange-600 flex flex-col items-center justify-center text-white p-6">
+        <div className="text-center space-y-8 animate-scaleIn">
+          <div className="relative">
+            <div className="absolute inset-0 bg-white/30 rounded-full blur-3xl animate-ping"></div>
+            <div className="relative text-9xl animate-bounce">⏰</div>
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-6xl font-black">SÜRE BİTTİ!</h2>
+            <p className="text-2xl font-semibold opacity-90">Cevap verilemedi</p>
           </div>
         </div>
       </div>
