@@ -599,6 +599,16 @@ function HostScreen() {
     }
   }, [gameState, updateGameData]);
 
+  // Auto-advance from scores to next question after 3 seconds
+  useEffect(() => {
+    if (gameState === 'scores') {
+      const timer = setTimeout(() => {
+        socket.emit("next_question", pin);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState, pin]);
+
   const startGame = () => {
     updateGameData({ gameState: 'loading' });
     socket.emit("start_game", pin);
@@ -891,18 +901,8 @@ function HostScreen() {
     );
   }
 
-  // SCORES SCREEN - Auto advance after 3 seconds
+  // SCORES SCREEN
   if (gameState === 'scores') {
-    // Otomatik olarak sonraki soruya geç
-    useEffect(() => {
-      if (gameState === 'scores') {
-        const timer = setTimeout(() => {
-          nextQuestion();
-        }, 3000);
-        return () => clearTimeout(timer);
-      }
-    }, [gameState]);
-
     return (
       <div className="h-screen bg-orange-500 flex items-center justify-center p-8">
         <div className="text-center text-white space-y-8 animate-fadeIn max-w-4xl w-full">
@@ -1070,10 +1070,6 @@ function PlayerScreen() {
       setStatus("answered");
     });
 
-    socket.on("show_scores", () => {
-      setStatus("scores");
-    });
-
     socket.on("game_over", () => {
       setStatus("game_over");
     });
@@ -1113,7 +1109,7 @@ function PlayerScreen() {
         setTimeLeft(prev => {
           if (prev <= 1) {
             clearInterval(timer);
-            // Süre bitti - sadece time_up ekranı göster
+            // Süre bitti - time_up ekranı göster, sonra scores'a geç
             setStatus('time_up');
             return 0;
           }
@@ -1124,6 +1120,26 @@ function PlayerScreen() {
       return () => clearInterval(timer);
     }
   }, [status, currentQuestion]);
+
+  // Time up'dan sonra otomatik scores'a geç
+  useEffect(() => {
+    if (status === 'time_up') {
+      const timer = setTimeout(() => {
+        setStatus('scores');
+      }, 2000); // 2 saniye "Süre Bitti" göster
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
+
+  // Answered'dan sonra otomatik scores'a geç
+  useEffect(() => {
+    if (status === 'answered') {
+      const timer = setTimeout(() => {
+        setStatus('scores');
+      }, 2000); // 2 saniye sonuç göster
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
 
   const sendAnswer = (index) => {
     socket.emit("submit_answer", { pin, answerIndex: index, timeLeft });
