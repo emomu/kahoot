@@ -1552,10 +1552,12 @@ function GameStatistics() {
     );
   }
 
-  if (!gameData) {
+  if (!gameData || !gameData.questions || gameData.questions.length === 0) {
     return (
       <div className="min-h-screen bg-indigo-700 flex items-center justify-center">
-        <div className="text-white text-3xl font-bold">Oyun bulunamadı</div>
+        <div className="text-white text-3xl font-bold">
+          {!gameData ? 'Oyun bulunamadı' : 'Bu oyunda soru bulunmuyor'}
+        </div>
       </div>
     );
   }
@@ -1567,7 +1569,7 @@ function GameStatistics() {
     { bg: 'bg-green-500', name: 'Yeşil', icon: '✅' }
   ];
 
-  const currentQ = gameData?.questions?.[selectedQuestion];
+  const currentQ = gameData.questions[selectedQuestion];
 
   return (
     <div className="min-h-screen bg-indigo-700 p-4 md:p-8">
@@ -1600,7 +1602,7 @@ function GameStatistics() {
         <div className="bg-white rounded-3xl shadow-2xl p-6">
           <h2 className="text-3xl font-black text-gray-800 mb-6">🏆 Final Sıralaması</h2>
           <div className="grid md:grid-cols-3 gap-4">
-            {gameData.finalScores.slice(0, 3).map((player, index) => (
+            {gameData?.finalScores?.slice(0, 3)?.map((player, index) => (
               <div
                 key={index}
                 className={`rounded-2xl p-6 text-white ${
@@ -1613,25 +1615,25 @@ function GameStatistics() {
                   <div className="text-5xl mb-3">
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                   </div>
-                  <div className="font-black text-2xl mb-2">{player.username}</div>
-                  <div className="text-xl font-bold">{player.score} puan</div>
-                  <div className="text-sm mt-1">{player.correctAnswers}/{player.totalQuestions} doğru</div>
+                  <div className="font-black text-2xl mb-2">{player?.username}</div>
+                  <div className="text-xl font-bold">{player?.score} puan</div>
+                  <div className="text-sm mt-1">{player?.correctAnswers}/{player?.totalQuestions} doğru</div>
                 </div>
               </div>
             ))}
           </div>
-          {gameData.finalScores.length > 3 && (
+          {gameData?.finalScores?.length > 3 && (
             <div className="mt-6 space-y-2">
               <h3 className="font-bold text-gray-700 mb-3">Diğer Oyuncular</h3>
-              {gameData.finalScores.slice(3).map((player, index) => (
+              {gameData?.finalScores?.slice(3)?.map((player, index) => (
                 <div key={index} className="bg-gray-100 rounded-xl p-4 flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-gray-600">{index + 4}.</span>
-                    <span className="font-bold text-gray-800">{player.username}</span>
+                    <span className="font-bold text-gray-800">{player?.username}</span>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-gray-800">{player.score} puan</div>
-                    <div className="text-sm text-gray-600">{player.correctAnswers}/{player.totalQuestions} doğru</div>
+                    <div className="font-bold text-gray-800">{player?.score} puan</div>
+                    <div className="text-sm text-gray-600">{player?.correctAnswers}/{player?.totalQuestions} doğru</div>
                   </div>
                 </div>
               ))}
@@ -1663,14 +1665,14 @@ function GameStatistics() {
           {/* Question Detail */}
           {currentQ ? (
             <div className="bg-gray-50 rounded-2xl p-6 mb-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">{currentQ.questionText}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">{currentQ?.questionText}</h3>
               <div className="grid md:grid-cols-2 gap-4 mb-6">
-                {currentQ.answers?.map((answer, index) => {
-                const answersCount = currentQ.playerAnswers.filter(pa => pa.answerIndex === index).length;
-                const percentage = currentQ.playerAnswers.length > 0
+                {currentQ?.answers?.map((answer, index) => {
+                const answersCount = currentQ?.playerAnswers?.filter(pa => pa?.answerIndex === index)?.length || 0;
+                const percentage = currentQ?.playerAnswers?.length > 0
                   ? Math.round((answersCount / currentQ.playerAnswers.length) * 100)
                   : 0;
-                const isCorrect = index === currentQ.correctAnswer;
+                const isCorrect = index === currentQ?.correctAnswer;
 
                 return (
                   <div
