@@ -212,6 +212,15 @@ io.on('connection', (socket) => {
                 scores: finalScores,
                 winner: finalScores[0]
             });
+
+            // ✅ Memory leak fix: İstatistikler kaydedilene kadar oyunu bellekte tut
+            // Oyun 5 dakika sonra otomatik silinsin (eğer istatistikler kaydedilmemişse)
+            setTimeout(() => {
+                if (games[pin]) {
+                    console.log(`⚠️ Oyun otomatik silindi (timeout): PIN ${pin}`);
+                    delete games[pin];
+                }
+            }, 5 * 60 * 1000); // 5 dakika
         }
     });
 
@@ -323,12 +332,15 @@ io.on('connection', (socket) => {
             totalAnswered: game.answers[game.currentQuestionIndex].length,
             totalPlayers: game.players.length
         });
+
+        // ✅ Güncellenmiş oyuncu skorlarını sadece host'a gönder (performans optimizasyonu)
+        io.to(game.hostId).emit('players_updated', game.players);
     });
 
-    // Soru süresi bitti - Cevap dağılımını gönder
-    socket.on('time_up', (pin) => {
+    // Soru sonuçlarını getir (Host timer bitince)
+    socket.on('get_question_results', (pin) => {
         const game = games[pin];
-        if (!game || game.hostId !== socket.id) return;
+        if (!game) return;
 
         const currentAnswers = game.answers[game.currentQuestionIndex] || [];
         const answerStats = currentAnswers.reduce((acc, ans) => {
@@ -336,12 +348,17 @@ io.on('connection', (socket) => {
             return acc;
         }, {});
 
+        console.log(`📊 Soru sonuçları istendi - PIN: ${pin}`);
+        console.log(`Cevap dağılımı:`, answerStats);
+        console.log(`Toplam cevap veren: ${currentAnswers.length}/${game.players.length}`);
+
         // Tüm odaya cevap dağılımını ve question_results state'ini gönder
         io.to(pin).emit('show_question_results', {
             stats: answerStats,
             totalAnswered: currentAnswers.length,
             totalPlayers: game.players.length,
-            correctAnswer: game.questions[game.currentQuestionIndex].correctAnswer
+            correctAnswer: game.questions[game.currentQuestionIndex].correctAnswer,
+            currentQuestion: game.questions[game.currentQuestionIndex]
         });
     });
 
@@ -377,12 +394,16 @@ io.on('connection', (socket) => {
             });
 
             await gameHistory.save();
-            console.log(`Oyun istatistikleri kaydedildi: ${pin}`);
+            console.log(`✅ Oyun istatistikleri kaydedildi: ${pin}`);
 
             // Client'a istatistik ID'sini gönder
             socket.emit('stats_saved', { historyId: gameHistory._id });
+
+            // ✅ İstatistikler kaydedildi, oyunu bellekten sil
+            console.log(`🗑️ Oyun bellekten silindi: PIN ${pin}`);
+            delete games[pin];
         } catch (error) {
-            console.error('İstatistik kaydetme hatası:', error);
+            console.error('❌ İstatistik kaydetme hatası:', error);
             socket.emit('stats_save_error', { message: 'İstatistikler kaydedilemedi' });
         }
     });

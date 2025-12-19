@@ -520,10 +520,6 @@ function HostScreen() {
       updateGameData({ answerStats: data.stats });
     });
 
-    socket.on("show_scores", () => {
-      updateGameData({ gameState: 'scores' });
-    });
-
     socket.on("game_over", (data) => {
       updateGameData({
         gameState: 'result',
@@ -543,10 +539,17 @@ function HostScreen() {
     });
 
     socket.on("show_question_results", (data) => {
+      console.log('📊 Cevap dağılımı alındı:', data);
       updateGameData({
         gameState: 'question_results',
-        answerStats: data.stats
+        answerStats: data.stats,
+        currentQuestion: data.currentQuestion
       });
+    });
+
+    socket.on("players_updated", (updatedPlayers) => {
+      console.log('👥 Oyuncu skorları güncellendi:', updatedPlayers);
+      updateGameData({ players: updatedPlayers });
     });
 
     return () => {
@@ -554,11 +557,11 @@ function HostScreen() {
       socket.off("player_joined");
       socket.off("new_question");
       socket.off("answer_stats");
-      socket.off("show_scores");
       socket.off("game_over");
       socket.off("stats_saved");
       socket.off("stats_save_error");
       socket.off("show_question_results");
+      socket.off("players_updated");
     };
   }, [updateGameData, navigate]);
 
@@ -568,10 +571,10 @@ function HostScreen() {
       const timer = setInterval(() => {
         setHostTimeLeft(prev => {
           if (prev <= 1) {
-            // Süre bitti, server'a bildir ve cevap dağılımını iste
-            setTimeout(() => {
-              socket.emit('time_up', pin);
-            }, 500);
+            // Süre bitti, cevap dağılımını göster
+            clearInterval(timer);
+            // Server'dan final cevap dağılımını iste
+            socket.emit('get_question_results', pin);
             return 0;
           }
           return prev - 1;
@@ -844,8 +847,22 @@ function HostScreen() {
   }
 
   // QUESTION RESULTS SCREEN - Shows answer statistics
-  if (gameState === 'question_results' && currentQuestion && currentQuestion.answers) {
-    const totalAnswers = Object.values(answerStats).reduce((a, b) => a + b, 0);
+  if (gameState === 'question_results') {
+    console.log('🎯 Question Results ekranı:', { currentQuestion, answerStats, players });
+
+    // Eğer currentQuestion yoksa veya options yoksa, boş ekran gösterme
+    if (!currentQuestion || !currentQuestion.options) {
+      return (
+        <div className="h-screen bg-purple-600 flex items-center justify-center">
+          <div className="text-white text-center">
+            <h1 className="text-4xl font-black mb-4">Cevaplar yükleniyor...</h1>
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white mx-auto"></div>
+          </div>
+        </div>
+      );
+    }
+
+    const totalAnswers = Object.values(answerStats || {}).reduce((a, b) => a + b, 0);
     const colors = [
       { bg: 'bg-red-500', name: 'Kırmızı', icon: '🔺' },
       { bg: 'bg-blue-500', name: 'Mavi', icon: '🔷' },
@@ -866,7 +883,7 @@ function HostScreen() {
           </div>
 
           <div className="grid grid-cols-2 gap-6">
-            {currentQuestion.answers.map((answer, index) => {
+            {currentQuestion.options.map((answer, index) => {
               const count = answerStats[index] || 0;
               const percentage = totalAnswers > 0 ? Math.round((count / totalAnswers) * 100) : 0;
               const isCorrect = index === currentQuestion.correctAnswer;
@@ -911,6 +928,8 @@ function HostScreen() {
 
   // SCORES SCREEN
   if (gameState === 'scores') {
+    console.log('🏆 Ara Skor Tablosu - Oyuncular:', players);
+
     return (
       <div className="h-screen bg-orange-500 flex items-center justify-center p-8">
         <div className="text-center text-white space-y-8 animate-fadeIn max-w-4xl w-full">
@@ -927,7 +946,7 @@ function HostScreen() {
                       <span className="text-4xl">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}</span>
                       <span>{p?.username}</span>
                     </div>
-                    <span className="text-yellow-200">{p?.score} puan</span>
+                    <span className="text-yellow-200">{p?.score || 0} puan</span>
                   </div>
                 ))}
             </div>
@@ -1112,7 +1131,6 @@ function PlayerScreen() {
       socket.off("game_started");
       socket.off("new_question");
       socket.off("answer_result");
-      socket.off("show_scores");
       socket.off("game_over");
       socket.off("error");
       socket.off("host_left");
