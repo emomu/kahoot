@@ -803,6 +803,7 @@ function PlayerScreen() {
   const [answerResult, setAnswerResult] = useState(null);
   const [error, setError] = useState("");
   const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
     socket.on("joined_success", () => {
@@ -817,6 +818,7 @@ function PlayerScreen() {
 
     socket.on("new_question", (question) => {
       setCurrentQuestion(question);
+      setTimeLeft(question.timeLimit || 20);
       setStatus("playing");
       setAnswerResult(null);
     });
@@ -862,8 +864,25 @@ function PlayerScreen() {
     socket.emit("join_game", { pin, username: username.trim() });
   };
 
+  // Timer countdown effect
+  useEffect(() => {
+    if (status === 'playing' && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [status, currentQuestion]);
+
   const sendAnswer = (index) => {
-    socket.emit("submit_answer", { pin, answerIndex: index, timeLeft: 20 });
+    socket.emit("submit_answer", { pin, answerIndex: index, timeLeft });
   };
 
   // LOGIN SCREEN
@@ -1030,10 +1049,35 @@ function PlayerScreen() {
 
   // PLAYING SCREEN (ANSWER BUTTONS)
   if (status === 'playing' && currentQuestion) {
+    const timePercentage = currentQuestion.timeLimit ? (timeLeft / currentQuestion.timeLimit) * 100 : 100;
+    const timeColor = timeLeft <= 5 ? 'text-red-500' : timeLeft <= 10 ? 'text-orange-500' : 'text-green-500';
+
     return (
-      <div className="h-screen bg-gradient-to-br from-indigo-600 to-purple-700 p-4">
+      <div className="h-screen bg-gradient-to-br from-indigo-600 to-purple-700 flex flex-col">
+        {/* Timer Header */}
+        <div className="p-4 bg-white/10 backdrop-blur-sm">
+          <div className="max-w-md mx-auto">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-white/80 text-sm font-bold">
+                Soru {currentQuestion.questionNumber} / {currentQuestion.totalQuestions}
+              </div>
+              <div className={`flex items-center gap-2 font-black text-2xl ${timeColor} transition-colors`}>
+                <Clock className="w-6 h-6" />
+                {timeLeft}s
+              </div>
+            </div>
+            {/* Progress Bar */}
+            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-1000 ${timeLeft <= 5 ? 'bg-red-500' : timeLeft <= 10 ? 'bg-orange-500' : 'bg-green-500'}`}
+                style={{ width: `${timePercentage}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+
         {/* Cevap Butonları */}
-        <div className="h-full grid grid-cols-2 grid-rows-2 gap-4">
+        <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 p-4">
           {colors.map((color, i) => (
             <button
               key={i}
