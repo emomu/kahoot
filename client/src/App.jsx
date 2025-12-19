@@ -18,6 +18,8 @@ const useSound = (soundFile) => {
     if (soundFile) {
       const audioElement = new Audio(`/sounds/${soundFile}`);
       audioElement.volume = 0.5; // %50 ses seviyesi
+      audioElement.preload = 'auto'; // ✅ Sesi önceden yükle
+      audioElement.load(); // ✅ Sesi arka planda hazırla
       return audioElement;
     }
     return null;
@@ -667,6 +669,9 @@ function HostScreen() {
     if (gameState === 'result') {
       // Podyum ekranında ses çal
       podiumSound.play();
+    } else {
+      // ✅ Podyum ekranından çıkınca sesi durdur
+      podiumSound.stop();
     }
   }, [gameState, questionSound, scoresSound, podiumSound]);
 
