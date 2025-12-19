@@ -12,6 +12,40 @@ const HOST_PASSWORD = import.meta.env.VITE_HOST_PASSWORD || "340667";
 const socket = io.connect(SOCKET_URL);
 const API_BASE = `${API_URL}/api`;
 
+// Custom hook for playing sounds
+const useSound = (soundFile) => {
+  const [audio] = useState(() => {
+    if (soundFile) {
+      const audioElement = new Audio(`/sounds/${soundFile}`);
+      audioElement.volume = 0.5; // %50 ses seviyesi
+      return audioElement;
+    }
+    return null;
+  });
+
+  const play = () => {
+    if (audio) {
+      audio.currentTime = 0; // Baştan başlat
+      audio.play().catch(err => console.log('Ses çalma hatası:', err));
+    }
+  };
+
+  const stop = () => {
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  };
+
+  const loop = (shouldLoop) => {
+    if (audio) {
+      audio.loop = shouldLoop;
+    }
+  };
+
+  return { play, stop, loop };
+};
+
 // Auth Context for Host Protection
 const AuthContext = createContext();
 
@@ -353,12 +387,21 @@ function QuizLibrary() {
   }, []);
 
   const deleteQuiz = async (quizId) => {
-    if (confirm('Bu quiz\'i silmek istediğinize emin misiniz?')) {
+    const quizToDelete = quizzes.find(q => (q._id || q.id) === quizId);
+    const quizTitle = quizToDelete?.title || 'Bu quiz';
+
+    if (confirm(`"${quizTitle}" adlı quiz'i silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!`)) {
       try {
-        await fetch(`${API_BASE}/quiz/${quizId}`, { method: 'DELETE' });
-        loadQuizzes();
+        const response = await fetch(`${API_BASE}/quiz/${quizId}`, { method: 'DELETE' });
+        if (response.ok) {
+          alert('✅ Quiz başarıyla silindi!');
+          loadQuizzes();
+        } else {
+          alert('❌ Quiz silinemedi!');
+        }
       } catch (error) {
-        alert('Quiz silinemedi!');
+        console.error('Quiz silme hatası:', error);
+        alert('❌ Quiz silinirken bir hata oluştu!');
       }
     }
   };
@@ -481,6 +524,11 @@ function HostScreen() {
   const { gameId } = useParams();
   const navigate = useNavigate();
 
+  // Sound effects
+  const questionSound = useSound('question.mp3');
+  const scoresSound = useSound('scores.mp3');
+  const podiumSound = useSound('podium.mp3');
+
   // Zustand store
   const pin = useGameStore((state) => state.pin);
   const players = useGameStore((state) => state.players);
@@ -599,6 +647,28 @@ function HostScreen() {
       };
     }
   }, [gameState, finalScores]);
+
+  // Sound effects based on game state
+  useEffect(() => {
+    if (gameState === 'game') {
+      // Soru ekranında ses çal (loop)
+      questionSound.loop(true);
+      questionSound.play();
+    } else {
+      // Soru ekranından çıkınca sesi durdur
+      questionSound.stop();
+    }
+
+    if (gameState === 'scores') {
+      // Ara skor tablosunda ses çal
+      scoresSound.play();
+    }
+
+    if (gameState === 'result') {
+      // Podyum ekranında ses çal
+      podiumSound.play();
+    }
+  }, [gameState, questionSound, scoresSound, podiumSound]);
 
   const startGame = () => {
     updateGameData({ gameState: 'loading' });
