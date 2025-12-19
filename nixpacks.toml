@@ -3,7 +3,7 @@ nixPkgs = ["nodejs_20"]
 
 [phases.install]
 cmds = [
-  "cd client && npm ci && npm run build",
+  "cd client && npm ci --include=dev && npm run build",
   "cd server && npm ci --omit=dev"
 ]
 
