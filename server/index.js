@@ -325,6 +325,26 @@ io.on('connection', (socket) => {
         });
     });
 
+    // Soru süresi bitti - Cevap dağılımını gönder
+    socket.on('time_up', (pin) => {
+        const game = games[pin];
+        if (!game || game.hostId !== socket.id) return;
+
+        const currentAnswers = game.answers[game.currentQuestionIndex] || [];
+        const answerStats = currentAnswers.reduce((acc, ans) => {
+            acc[ans.answerIndex] = (acc[ans.answerIndex] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Tüm odaya cevap dağılımını ve question_results state'ini gönder
+        io.to(pin).emit('show_question_results', {
+            stats: answerStats,
+            totalAnswered: currentAnswers.length,
+            totalPlayers: game.players.length,
+            correctAnswer: game.questions[game.currentQuestionIndex].correctAnswer
+        });
+    });
+
     // Oyun istatistiklerini kaydet
     socket.on('save_game_stats', async (pin) => {
         const game = games[pin];

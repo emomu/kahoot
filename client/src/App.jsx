@@ -2,7 +2,7 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useSearchParams, useParams, Link } from 'react-router-dom';
 import io from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react';
-import { Play, Users, Trophy, Zap, Crown, Star, Plus, Edit3, Trash2, Clock, CheckCircle, XCircle, Lock, KeyRound } from 'lucide-react';
+import { Play, Users, Trophy, Zap, Crown, Star, Plus, Edit3, Trash2, Clock, CheckCircle, XCircle, Lock, KeyRound, Home } from 'lucide-react';
 import useGameStore from './store/gameStore';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
@@ -542,6 +542,13 @@ function HostScreen() {
       alert('İstatistikler kaydedilemedi!');
     });
 
+    socket.on("show_question_results", (data) => {
+      updateGameData({
+        gameState: 'question_results',
+        answerStats: data.stats
+      });
+    });
+
     return () => {
       socket.off("game_created");
       socket.off("player_joined");
@@ -551,6 +558,7 @@ function HostScreen() {
       socket.off("game_over");
       socket.off("stats_saved");
       socket.off("stats_save_error");
+      socket.off("show_question_results");
     };
   }, [updateGameData, navigate]);
 
@@ -560,9 +568,9 @@ function HostScreen() {
       const timer = setInterval(() => {
         setHostTimeLeft(prev => {
           if (prev <= 1) {
-            // Süre bitti, stats ekranına geç
+            // Süre bitti, server'a bildir ve cevap dağılımını iste
             setTimeout(() => {
-              updateGameData({ gameState: 'question_results' });
+              socket.emit('time_up', pin);
             }, 500);
             return 0;
           }
@@ -571,7 +579,7 @@ function HostScreen() {
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [gameState, currentQuestion, updateGameData]);
+  }, [gameState, hostTimeLeft, pin]);
 
   // Podium animation effect
   useEffect(() => {
@@ -1019,7 +1027,24 @@ function HostScreen() {
 
         {/* Finish Game Button - appears after podium animation */}
         {podiumStep >= 3 && (
-          <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 animate-fadeIn">
+          <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 animate-fadeIn flex gap-4">
+            <button
+              onClick={() => {
+                updateGameData({
+                  gameState: 'select',
+                  pin: null,
+                  players: [],
+                  currentQuestion: null,
+                  answerStats: {},
+                  finalScores: [],
+                  winner: null
+                });
+              }}
+              className="px-12 py-5 bg-gray-700 text-white rounded-full font-black text-2xl shadow-[0_8px_0_rgb(55,65,81)] hover:shadow-[0_4px_0_rgb(55,65,81)] hover:translate-y-1 active:shadow-none active:translate-y-2 transition-all flex items-center gap-3"
+            >
+              <Home className="w-8 h-8" />
+              Ana Sayfaya Dön
+            </button>
             <button
               onClick={() => socket.emit('save_game_stats', pin)}
               className="px-12 py-5 bg-green-600 text-white rounded-full font-black text-2xl shadow-[0_8px_0_rgb(22,163,74)] hover:shadow-[0_4px_0_rgb(22,163,74)] hover:translate-y-1 active:shadow-none active:translate-y-2 transition-all flex items-center gap-3"
