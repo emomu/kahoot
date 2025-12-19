@@ -1567,7 +1567,7 @@ function GameStatistics() {
     { bg: 'bg-green-500', name: 'Yeşil', icon: '✅' }
   ];
 
-  const currentQ = gameData.questions[selectedQuestion];
+  const currentQ = gameData?.questions?.[selectedQuestion];
 
   return (
     <div className="min-h-screen bg-indigo-700 p-4 md:p-8">
@@ -1645,7 +1645,7 @@ function GameStatistics() {
 
           {/* Question Selector */}
           <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-            {gameData.questions.map((q, index) => (
+            {gameData?.questions?.map((q, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedQuestion(index)}
@@ -1661,10 +1661,11 @@ function GameStatistics() {
           </div>
 
           {/* Question Detail */}
-          <div className="bg-gray-50 rounded-2xl p-6 mb-6">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">{currentQ.questionText}</h3>
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              {currentQ.answers.map((answer, index) => {
+          {currentQ ? (
+            <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">{currentQ.questionText}</h3>
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                {currentQ.answers?.map((answer, index) => {
                 const answersCount = currentQ.playerAnswers.filter(pa => pa.answerIndex === index).length;
                 const percentage = currentQ.playerAnswers.length > 0
                   ? Math.round((answersCount / currentQ.playerAnswers.length) * 100)
@@ -1702,10 +1703,10 @@ function GameStatistics() {
             {/* Player Answers for this Question */}
             <h4 className="text-xl font-bold text-gray-800 mb-4">Oyuncu Cevapları</h4>
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {currentQ.playerAnswers.length === 0 ? (
+              {currentQ.playerAnswers?.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">Bu soruya kimse cevap vermedi</p>
               ) : (
-                currentQ.playerAnswers.map((pa, index) => (
+                currentQ.playerAnswers?.map((pa, index) => (
                   <div
                     key={index}
                     className={`rounded-lg p-3 flex items-center justify-between ${
@@ -1716,7 +1717,7 @@ function GameStatistics() {
                       <span className="text-2xl">{pa.isCorrect ? '✅' : '❌'}</span>
                       <span className="font-bold text-gray-800">{pa.username}</span>
                       <span className="text-sm text-gray-600">
-                        {colors[pa.answerIndex].name}
+                        {colors[pa.answerIndex]?.name}
                       </span>
                     </div>
                     <div className="text-right">
@@ -1734,6 +1735,11 @@ function GameStatistics() {
               )}
             </div>
           </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              Soru bilgisi yükleniyor...
+            </div>
+          )}
         </div>
       </div>
     </div>
