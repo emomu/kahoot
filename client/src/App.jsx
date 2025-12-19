@@ -722,14 +722,14 @@ function HostScreen() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
-                    {players.map((p, i) => (
+                    {(players || []).map((p, i) => (
                       <div
                         key={i}
                         className="bg-indigo-600 p-4 rounded-xl font-bold text-center shadow-lg transform hover:scale-105 transition-all animate-slideIn flex items-center justify-center gap-2"
                         style={{ animationDelay: `${i * 100}ms` }}
                       >
                         <Star className="w-5 h-5 text-yellow-300" />
-                        <span className="truncate">{p.username}</span>
+                        <span className="truncate">{p?.username}</span>
                       </div>
                     ))}
                   </div>
@@ -754,7 +754,7 @@ function HostScreen() {
   }
 
   // GAME SCREEN
-  if (gameState === 'game' && currentQuestion) {
+  if (gameState === 'game' && currentQuestion && currentQuestion.options) {
     return (
       <div className="h-screen bg-indigo-700 flex flex-col">
         <div className="bg-white p-10 shadow-2xl relative overflow-hidden">
@@ -762,7 +762,7 @@ function HostScreen() {
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <span className="text-purple-600 font-bold text-lg">
-                Soru {currentQuestion.questionNumber} / {currentQuestion.totalQuestions}
+                Soru {currentQuestion?.questionNumber} / {currentQuestion?.totalQuestions}
               </span>
               <div className="flex items-center gap-6">
                 <div className={`flex items-center gap-2 font-black text-3xl ${hostTimeLeft <= 5 ? 'text-red-600' : hostTimeLeft <= 10 ? 'text-orange-600' : 'text-green-600'} transition-colors`}>
@@ -770,12 +770,12 @@ function HostScreen() {
                   {hostTimeLeft}s
                 </div>
                 <span className="text-gray-600 font-semibold">
-                  {Object.values(answerStats).reduce((a, b) => a + b, 0)} / {players.length} cevap
+                  {Object.values(answerStats).reduce((a, b) => a + b, 0)} / {players?.length || 0} cevap
                 </span>
               </div>
             </div>
             <h2 className="text-5xl font-black text-gray-800 leading-tight text-center animate-fadeIn">
-              {currentQuestion.question}
+              {currentQuestion?.question}
             </h2>
           </div>
         </div>
@@ -783,7 +783,7 @@ function HostScreen() {
         <div className="flex-1 grid grid-cols-2 gap-6 p-8">
           {currentQuestion.options.map((opt, i) => {
             const answerCount = answerStats[i] || 0;
-            const percentage = players.length > 0 ? Math.round((answerCount / players.length) * 100) : 0;
+            const percentage = (players?.length || 0) > 0 ? Math.round((answerCount / (players?.length || 1)) * 100) : 0;
 
             return (
               <div
@@ -826,7 +826,7 @@ function HostScreen() {
   }
 
   // QUESTION RESULTS SCREEN - Shows answer statistics
-  if (gameState === 'question_results' && currentQuestion) {
+  if (gameState === 'question_results' && currentQuestion && currentQuestion.answers) {
     const totalAnswers = Object.values(answerStats).reduce((a, b) => a + b, 0);
     const colors = [
       { bg: 'bg-red-500', name: 'Kırmızı', icon: '🔺' },
@@ -839,12 +839,12 @@ function HostScreen() {
       <div className="h-screen bg-purple-600 flex flex-col p-8">
         <div className="text-white text-center mb-8">
           <h1 className="text-5xl font-black mb-4">Cevap Dağılımı</h1>
-          <p className="text-2xl font-semibold">{totalAnswers} / {players.length} kişi cevapladı</p>
+          <p className="text-2xl font-semibold">{totalAnswers} / {players?.length || 0} kişi cevapladı</p>
         </div>
 
         <div className="flex-1 flex flex-col justify-center max-w-6xl mx-auto w-full">
           <div className="bg-white rounded-3xl p-8 mb-4">
-            <h2 className="text-3xl font-black text-gray-800 mb-6">{currentQuestion.question}</h2>
+            <h2 className="text-3xl font-black text-gray-800 mb-6">{currentQuestion?.question}</h2>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
@@ -900,16 +900,16 @@ function HostScreen() {
           <h1 className="text-7xl font-black drop-shadow-2xl">Ara Skor Tablosu</h1>
           <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-8">
             <div className="space-y-3">
-              {players
-                .sort((a, b) => b.score - a.score)
+              {(players || [])
+                .sort((a, b) => (b?.score || 0) - (a?.score || 0))
                 .slice(0, 5)
                 .map((p, i) => (
                   <div key={i} className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 flex items-center justify-between text-2xl font-bold">
                     <div className="flex items-center gap-4">
                       <span className="text-4xl">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}</span>
-                      <span>{p.username}</span>
+                      <span>{p?.username}</span>
                     </div>
-                    <span className="text-yellow-200">{p.score} puan</span>
+                    <span className="text-yellow-200">{p?.score} puan</span>
                   </div>
                 ))}
             </div>
@@ -998,9 +998,9 @@ function HostScreen() {
           <div className="mt-12 z-10 animate-fadeIn">
             <h3 className="text-white text-2xl font-bold mb-4 text-center">Diğer Oyuncular</h3>
             <div className="flex flex-wrap gap-4 justify-center max-w-4xl">
-              {finalScores.slice(3).map((player, i) => (
+              {(finalScores || []).slice(3).map((player, i) => (
                 <div key={i} className="bg-white/20 backdrop-blur-sm rounded-xl px-6 py-3 text-white">
-                  <span className="font-bold">{i + 4}.</span> {player.username} - {player.score} puan
+                  <span className="font-bold">{i + 4}.</span> {player?.username} - {player?.score} puan
                 </div>
               ))}
             </div>
