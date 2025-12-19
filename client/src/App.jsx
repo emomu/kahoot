@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate, useSearchParams, useParams, 
 import io from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react';
 import { Play, Users, Trophy, Zap, Crown, Star, Plus, Edit3, Trash2, Clock, CheckCircle, XCircle, Lock, KeyRound } from 'lucide-react';
+import useGameStore from './store/gameStore';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -10,9 +11,6 @@ const HOST_PASSWORD = import.meta.env.VITE_HOST_PASSWORD || "340667";
 
 const socket = io.connect(SOCKET_URL);
 const API_BASE = `${API_URL}/api`;
-
-// Game Context
-const GameContext = createContext();
 
 // Auth Context for Host Protection
 const AuthContext = createContext();
@@ -24,24 +22,6 @@ function AuthProvider({ children }) {
     <AuthContext.Provider value={{ isHostAuthenticated, setIsHostAuthenticated }}>
       {children}
     </AuthContext.Provider>
-  );
-}
-
-function GameProvider({ children }) {
-  const [gameData, setGameData] = useState({
-    pin: null,
-    players: [],
-    gameState: 'select',
-    currentQuestion: null,
-    answerStats: {},
-    finalScores: [],
-    winner: null
-  });
-
-  return (
-    <GameContext.Provider value={{ gameData, setGameData }}>
-      {children}
-    </GameContext.Provider>
   );
 }
 
@@ -350,7 +330,8 @@ function QuizCreator() {
 // === QUIZ KÜTÜPHANESİ ===
 function QuizLibrary() {
   const navigate = useNavigate();
-  const { setGameData } = useContext(GameContext);
+  const updateGameData = useGameStore((state) => state.updateGameData);
+  const resetGame = useGameStore((state) => state.resetGame);
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -384,17 +365,16 @@ function QuizLibrary() {
 
   const startGame = (quiz) => {
     // Game state'i lobby olarak ayarla
-    setGameData(prev => ({ ...prev, gameState: 'loading' }));
+    updateGameData({ gameState: 'loading' });
 
     // Socket event dinle
     const handleGameCreated = (newPin) => {
       socket.off('game_created', handleGameCreated);
-      setGameData(prev => ({
-        ...prev,
+      updateGameData({
         pin: newPin,
         gameState: 'lobby',
         players: []
-      }));
+      });
       // Quiz ID'sini route'a ekle
       navigate(`/host/${quiz._id || quiz.id}`);
     };
@@ -500,50 +480,56 @@ function QuizLibrary() {
 function HostScreen() {
   const { gameId } = useParams();
   const navigate = useNavigate();
-  const { gameData, setGameData } = useContext(GameContext);
-  const { pin, players, gameState, currentQuestion, answerStats, finalScores, winner } = gameData;
+
+  // Zustand store
+  const pin = useGameStore((state) => state.pin);
+  const players = useGameStore((state) => state.players);
+  const gameState = useGameStore((state) => state.gameState);
+  const currentQuestion = useGameStore((state) => state.currentQuestion);
+  const answerStats = useGameStore((state) => state.answerStats);
+  const finalScores = useGameStore((state) => state.finalScores);
+  const winner = useGameStore((state) => state.winner);
+  const updateGameData = useGameStore((state) => state.updateGameData);
+
   const [hostTimeLeft, setHostTimeLeft] = useState(0);
   const [podiumStep, setPodiumStep] = useState(0);
 
   useEffect(() => {
     socket.on("game_created", (newPin) => {
       console.log('Game created with PIN:', newPin);
-      setGameData(prev => ({
-        ...prev,
+      updateGameData({
         pin: newPin,
         gameState: 'lobby'
-      }));
+      });
     });
 
     socket.on("player_joined", (updatedPlayers) => {
-      setGameData(prev => ({ ...prev, players: updatedPlayers }));
+      updateGameData({ players: updatedPlayers });
     });
 
     socket.on("new_question", (question) => {
-      setGameData(prev => ({
-        ...prev,
+      updateGameData({
         gameState: 'game',
         currentQuestion: question,
         answerStats: {}
-      }));
+      });
       setHostTimeLeft(question.timeLimit || 20);
     });
 
     socket.on("answer_stats", (data) => {
-      setGameData(prev => ({ ...prev, answerStats: data.stats }));
+      updateGameData({ answerStats: data.stats });
     });
 
     socket.on("show_scores", () => {
-      setGameData(prev => ({ ...prev, gameState: 'scores' }));
+      updateGameData({ gameState: 'scores' });
     });
 
     socket.on("game_over", (data) => {
-      setGameData(prev => ({
-        ...prev,
+      updateGameData({
         gameState: 'result',
         finalScores: data.scores,
         winner: data.winner
-      }));
+      });
     });
 
     socket.on("stats_saved", (data) => {
@@ -566,7 +552,7 @@ function HostScreen() {
       socket.off("stats_saved");
       socket.off("stats_save_error");
     };
-  }, [setGameData, navigate]);
+  }, [updateGameData, navigate]);
 
   // Host timer countdown
   useEffect(() => {
@@ -576,7 +562,7 @@ function HostScreen() {
           if (prev <= 1) {
             // Süre bitti, stats ekranına geç
             setTimeout(() => {
-              setGameData(prevData => ({ ...prevData, gameState: 'question_results' }));
+              updateGameData({ gameState: 'question_results' });
             }, 500);
             return 0;
           }
@@ -585,7 +571,7 @@ function HostScreen() {
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [gameState, currentQuestion, setGameData]);
+  }, [gameState, currentQuestion, updateGameData]);
 
   // Podium animation effect
   useEffect(() => {
@@ -607,14 +593,14 @@ function HostScreen() {
   useEffect(() => {
     if (gameState === 'question_results') {
       const timer = setTimeout(() => {
-        setGameData(prev => ({ ...prev, gameState: 'scores' }));
+        updateGameData({ gameState: 'scores' });
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [gameState, setGameData]);
+  }, [gameState, updateGameData]);
 
   const startGame = () => {
-    setGameData(prev => ({ ...prev, gameState: 'loading' }));
+    updateGameData({ gameState: 'loading' });
     socket.emit("start_game", pin);
   };
 
@@ -1758,20 +1744,18 @@ function GameStatistics() {
 function App() {
   return (
     <AuthProvider>
-      <GameProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/host" element={<HostPasswordGate><HostScreen /></HostPasswordGate>} />
-            <Route path="/host/create" element={<HostPasswordGate><QuizCreator /></HostPasswordGate>} />
-            <Route path="/host/library" element={<HostPasswordGate><QuizLibrary /></HostPasswordGate>} />
-            <Route path="/host/:gameId" element={<HostPasswordGate><HostScreen /></HostPasswordGate>} />
-            <Route path="/history" element={<HostPasswordGate><GameHistory /></HostPasswordGate>} />
-            <Route path="/history/:historyId" element={<HostPasswordGate><GameStatistics /></HostPasswordGate>} />
-            <Route path="/play" element={<PlayerScreen />} />
-          </Routes>
-        </BrowserRouter>
-      </GameProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/host" element={<HostPasswordGate><HostScreen /></HostPasswordGate>} />
+          <Route path="/host/create" element={<HostPasswordGate><QuizCreator /></HostPasswordGate>} />
+          <Route path="/host/library" element={<HostPasswordGate><QuizLibrary /></HostPasswordGate>} />
+          <Route path="/host/:gameId" element={<HostPasswordGate><HostScreen /></HostPasswordGate>} />
+          <Route path="/history" element={<HostPasswordGate><GameHistory /></HostPasswordGate>} />
+          <Route path="/history/:historyId" element={<HostPasswordGate><GameStatistics /></HostPasswordGate>} />
+          <Route path="/play" element={<PlayerScreen />} />
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   );
 }
