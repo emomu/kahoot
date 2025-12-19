@@ -66,7 +66,7 @@ function HostPasswordGate({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-indigo-700 to-blue-800 flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-indigo-700 flex items-center justify-center p-6 relative overflow-hidden">
       <div className="absolute inset-0">
         <div className="absolute top-20 left-10 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-20 right-10 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
@@ -108,7 +108,7 @@ function HostPasswordGate({ children }) {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-5 rounded-2xl font-black text-2xl hover:scale-105 transition-all shadow-[0_8px_0_rgb(79,70,229)] hover:shadow-[0_4px_0_rgb(79,70,229)] hover:translate-y-1 active:shadow-none active:translate-y-2 flex items-center justify-center gap-2"
+              className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-2xl hover:scale-105 transition-all shadow-[0_8px_0_rgb(79,70,229)] hover:shadow-[0_4px_0_rgb(79,70,229)] hover:translate-y-1 active:shadow-none active:translate-y-2 flex items-center justify-center gap-2"
             >
               <Lock className="w-6 h-6" />
               GİRİŞ YAP
@@ -129,10 +129,10 @@ function HostPasswordGate({ children }) {
 
 // --- RENK PALETİ ---
 const colors = [
-  { bg: "bg-gradient-to-br from-red-500 to-red-600", shadow: "shadow-[0_8px_0_rgb(220,38,38)]", icon: "▲", name: "red" },
-  { bg: "bg-gradient-to-br from-blue-500 to-blue-600", shadow: "shadow-[0_8px_0_rgb(37,99,235)]", icon: "◆", name: "blue" },
-  { bg: "bg-gradient-to-br from-yellow-400 to-yellow-500", shadow: "shadow-[0_8px_0_rgb(234,179,8)]", icon: "●", name: "yellow" },
-  { bg: "bg-gradient-to-br from-green-500 to-green-600", shadow: "shadow-[0_8px_0_rgb(22,163,74)]", icon: "■", name: "green" }
+  { bg: "bg-red-500", shadow: "shadow-[0_8px_0_rgb(220,38,38)]", icon: "▲", name: "red" },
+  { bg: "bg-blue-500", shadow: "shadow-[0_8px_0_rgb(37,99,235)]", icon: "◆", name: "blue" },
+  { bg: "bg-yellow-400", shadow: "shadow-[0_8px_0_rgb(234,179,8)]", icon: "●", name: "yellow" },
+  { bg: "bg-green-500", shadow: "shadow-[0_8px_0_rgb(22,163,74)]", icon: "■", name: "green" }
 ];
 
 // === QUIZ OLUŞTURMA SAYFASI ===
@@ -199,7 +199,7 @@ function QuizCreator() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700 p-4 md:p-8">
+    <div className="min-h-screen bg-indigo-700 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 mb-6">
@@ -335,7 +335,7 @@ function QuizCreator() {
           </button>
           <button
             onClick={saveQuiz}
-            className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-2xl font-bold text-lg hover:scale-105 transition-all shadow-xl shadow-[0_8px_0_rgb(22,163,74)] hover:shadow-[0_4px_0_rgb(22,163,74)] hover:translate-y-1 active:shadow-none active:translate-y-2"
+            className="flex-1 bg-green-600 text-white px-6 py-4 rounded-2xl font-bold text-lg hover:scale-105 transition-all shadow-xl shadow-[0_8px_0_rgb(22,163,74)] hover:shadow-[0_4px_0_rgb(22,163,74)] hover:translate-y-1 active:shadow-none active:translate-y-2"
           >
             Quiz'i Kaydet
           </button>
@@ -401,7 +401,7 @@ function QuizLibrary() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700 p-4 md:p-8">
+    <div className="min-h-screen bg-indigo-700 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 mb-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -418,7 +418,7 @@ function QuizLibrary() {
               </Link>
               <Link
                 to="/host/create"
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold hover:scale-105 transition-all shadow-xl flex items-center gap-2"
+                className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:scale-105 transition-all shadow-xl flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 Yeni Quiz
@@ -436,7 +436,7 @@ function QuizLibrary() {
             <p className="text-gray-600 mb-6">İlk quiz'inizi oluşturarak başlayın!</p>
             <Link
               to="/host/create"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl font-bold hover:scale-105 transition-all shadow-xl"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:scale-105 transition-all shadow-xl"
             >
               <Plus className="w-6 h-6" />
               Quiz Oluştur
@@ -468,7 +468,7 @@ function QuizLibrary() {
 
                 <button
                   onClick={() => startGame(quiz)}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-xl font-bold hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2"
+                  className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2"
                 >
                   <Play className="w-5 h-5" />
                   Oyunu Başlat
@@ -535,6 +535,7 @@ function HostScreen() {
   }, [setGameData]);
 
   const startGame = () => {
+    setGameState('loading');
     socket.emit("start_game", pin);
   };
 
@@ -545,7 +546,7 @@ function HostScreen() {
   // LOADING SCREEN
   if (gameState === 'loading') {
     return (
-      <div className="h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 flex items-center justify-center p-6">
+      <div className="h-screen bg-indigo-700 flex items-center justify-center p-6">
         <div className="text-center text-white space-y-8 animate-fadeIn">
           <div className="relative">
             <div className="absolute inset-0 bg-white/30 rounded-full blur-3xl animate-ping"></div>
@@ -568,7 +569,7 @@ function HostScreen() {
   // SELECT SCREEN
   if (gameState === 'select') {
     return (
-      <div className="h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 flex items-center justify-center p-6">
+      <div className="h-screen bg-indigo-700 flex items-center justify-center p-6">
         <div className="max-w-2xl w-full space-y-8">
           <div className="text-center text-white space-y-4">
             <h1 className="text-6xl font-black">Kahoot! Host</h1>
@@ -587,7 +588,7 @@ function HostScreen() {
 
             <Link
               to="/host/create"
-              className="bg-gradient-to-br from-green-500 to-emerald-600 p-8 rounded-3xl shadow-2xl hover:scale-105 transition-all text-center space-y-4 text-white"
+              className="bg-green-600 p-8 rounded-3xl shadow-2xl hover:scale-105 transition-all text-center space-y-4 text-white"
             >
               <div className="text-6xl">➕</div>
               <h3 className="text-2xl font-black">Yeni Quiz</h3>
@@ -608,7 +609,7 @@ function HostScreen() {
     const joinUrl = `${window.location.origin}/play?pin=${pin}`;
 
     return (
-      <div className="h-screen bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex flex-col">
+      <div className="h-screen bg-indigo-700 text-white flex flex-col">
         <div className="pt-8 pb-6 text-center space-y-4">
           <h2 className="text-3xl font-bold text-purple-200">Oyuncular Katılıyor...</h2>
           <div className="flex flex-col items-center gap-2">
@@ -625,7 +626,7 @@ function HostScreen() {
           <div className="flex gap-12 items-start max-w-6xl w-full">
             <div className="flex-shrink-0 bg-white p-8 rounded-3xl shadow-2xl transform hover:scale-105 transition-transform">
               <div className="space-y-4">
-                <div className="bg-gradient-to-br from-purple-100 to-indigo-100 p-4 rounded-2xl">
+                <div className="bg-purple-100 p-4 rounded-2xl">
                   <QRCodeSVG value={joinUrl} size={220} className="w-full h-full" />
                 </div>
                 <div className="text-center">
@@ -659,7 +660,7 @@ function HostScreen() {
                     {players.map((p, i) => (
                       <div
                         key={i}
-                        className="bg-gradient-to-r from-purple-500 to-indigo-500 p-4 rounded-xl font-bold text-center shadow-lg transform hover:scale-105 transition-all animate-slideIn flex items-center justify-center gap-2"
+                        className="bg-indigo-600 p-4 rounded-xl font-bold text-center shadow-lg transform hover:scale-105 transition-all animate-slideIn flex items-center justify-center gap-2"
                         style={{ animationDelay: `${i * 100}ms` }}
                       >
                         <Star className="w-5 h-5 text-yellow-300" />
@@ -673,11 +674,11 @@ function HostScreen() {
           </div>
         </div>
 
-        <div className="pb-10 flex justify-center">
+        <div className="pb-10 pt-6 flex justify-center">
           <button
             onClick={startGame}
             disabled={players.length === 0}
-            className="group px-16 py-5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full text-3xl font-black shadow-[0_10px_0_rgb(22,163,74)] hover:shadow-[0_6px_0_rgb(22,163,74)] hover:translate-y-1 active:shadow-none active:translate-y-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[0_10px_0_rgb(22,163,74)] transition-all flex items-center gap-3"
+            className="group px-16 py-5 bg-green-600 rounded-full text-3xl font-black shadow-[0_10px_0_rgb(22,163,74)] hover:shadow-[0_6px_0_rgb(22,163,74)] hover:translate-y-1 active:shadow-none active:translate-y-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[0_10px_0_rgb(22,163,74)] transition-all flex items-center gap-3"
           >
             <Play className="w-8 h-8 group-hover:animate-pulse" />
             BAŞLAT
@@ -690,9 +691,9 @@ function HostScreen() {
   // GAME SCREEN
   if (gameState === 'game' && currentQuestion) {
     return (
-      <div className="h-screen bg-gradient-to-br from-indigo-600 to-purple-700 flex flex-col">
+      <div className="h-screen bg-indigo-700 flex flex-col">
         <div className="bg-white p-10 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 animate-pulse"></div>
+          <div className="absolute top-0 left-0 w-full h-2 bg-purple-500 animate-pulse"></div>
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <span className="text-purple-600 font-bold text-lg">
@@ -743,7 +744,7 @@ function HostScreen() {
         <div className="p-6 bg-white/10 backdrop-blur-sm flex justify-end">
           <button
             onClick={nextQuestion}
-            className="px-10 py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full font-bold text-xl shadow-[0_6px_0_rgb(67,56,202)] hover:shadow-[0_3px_0_rgb(67,56,202)] hover:translate-y-1 active:shadow-none active:translate-y-2 transition-all flex items-center gap-2"
+            className="px-10 py-4 bg-blue-600 text-white rounded-full font-bold text-xl shadow-[0_6px_0_rgb(67,56,202)] hover:shadow-[0_3px_0_rgb(67,56,202)] hover:translate-y-1 active:shadow-none active:translate-y-2 transition-all flex items-center gap-2"
           >
             {currentQuestion.questionNumber < currentQuestion.totalQuestions ? 'Sonraki Soru' : 'Sonuçları Göster'}
             <span className="text-2xl">→</span>
@@ -756,7 +757,7 @@ function HostScreen() {
   // SCORES SCREEN
   if (gameState === 'scores') {
     return (
-      <div className="h-screen bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 flex items-center justify-center p-8">
+      <div className="h-screen bg-orange-500 flex items-center justify-center p-8">
         <div className="text-center text-white space-y-8 animate-fadeIn max-w-4xl w-full">
           <Trophy className="w-32 h-32 mx-auto animate-bounce text-yellow-200" />
           <h1 className="text-7xl font-black drop-shadow-2xl">Ara Skor Tablosu</h1>
@@ -784,7 +785,7 @@ function HostScreen() {
 
   // RESULT SCREEN
   return (
-    <div className="h-screen bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 flex items-center justify-center">
+    <div className="h-screen bg-orange-500 flex items-center justify-center">
       <div className="text-center text-white space-y-8 animate-fadeIn">
         <Trophy className="w-32 h-32 mx-auto animate-bounce text-yellow-200" />
         <h1 className="text-7xl font-black drop-shadow-2xl">Oyun Bitti!</h1>
@@ -888,7 +889,7 @@ function PlayerScreen() {
   // LOGIN SCREEN
   if (status === 'login') {
     return (
-      <div className="h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <div className="h-screen bg-purple-600 flex flex-col items-center justify-center p-6 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-20 left-10 w-32 h-32 bg-white/20 rounded-full blur-xl animate-float"></div>
           <div className="absolute bottom-20 right-10 w-40 h-40 bg-white/20 rounded-full blur-xl animate-float-delayed"></div>
@@ -935,7 +936,7 @@ function PlayerScreen() {
             <button
               onClick={joinGame}
               disabled={!username || !pin}
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-5 rounded-2xl font-black text-2xl hover:scale-105 transition-all shadow-[0_8px_0_rgb(79,70,229)] hover:shadow-[0_4px_0_rgb(79,70,229)] hover:translate-y-1 active:shadow-none active:translate-y-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
+              className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-2xl hover:scale-105 transition-all shadow-[0_8px_0_rgb(79,70,229)] hover:shadow-[0_4px_0_rgb(79,70,229)] hover:translate-y-1 active:shadow-none active:translate-y-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
             >
               GİR
             </button>
@@ -948,7 +949,7 @@ function PlayerScreen() {
   // WAITING/READY SCREEN
   if (status === 'waiting' || status === 'ready') {
     return (
-      <div className="h-screen bg-gradient-to-br from-blue-500 to-cyan-500 flex flex-col items-center justify-center text-white p-6">
+      <div className="h-screen bg-blue-600 flex flex-col items-center justify-center text-white p-6">
         <div className="text-center space-y-8 animate-fadeIn">
           <div className="relative">
             <div className="absolute inset-0 bg-white/30 rounded-full blur-3xl animate-ping"></div>
@@ -975,8 +976,8 @@ function PlayerScreen() {
     return (
       <div className={`h-screen flex flex-col items-center justify-center text-white p-6 ${
         answerResult.correct
-          ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-          : 'bg-gradient-to-br from-red-500 to-pink-600'
+          ? 'bg-green-600'
+          : 'bg-red-600'
       }`}>
         <div className="text-center space-y-8 animate-scaleIn">
           <div className="relative">
@@ -1006,7 +1007,7 @@ function PlayerScreen() {
   // SCORES SCREEN
   if (status === 'scores') {
     return (
-      <div className="h-screen bg-gradient-to-br from-indigo-500 to-purple-600 flex flex-col items-center justify-center text-white p-6">
+      <div className="h-screen bg-indigo-600 flex flex-col items-center justify-center text-white p-6">
         <div className="text-center space-y-8 animate-fadeIn">
           <Trophy className="w-24 h-24 mx-auto text-yellow-300 animate-bounce" />
           <div className="space-y-3">
@@ -1021,7 +1022,7 @@ function PlayerScreen() {
   // GAME OVER
   if (status === 'game_over') {
     return (
-      <div className="h-screen bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 flex flex-col items-center justify-center text-white p-6">
+      <div className="h-screen bg-orange-500 flex flex-col items-center justify-center text-white p-6">
         <div className="text-center space-y-8 animate-fadeIn">
           <Trophy className="w-32 h-32 mx-auto text-yellow-200 animate-bounce" />
           <h1 className="text-6xl font-black drop-shadow-2xl">Oyun Bitti!</h1>
@@ -1034,7 +1035,7 @@ function PlayerScreen() {
   // HOST LEFT
   if (status === 'host_left') {
     return (
-      <div className="h-screen bg-gradient-to-br from-gray-600 to-gray-800 flex flex-col items-center justify-center text-white p-6">
+      <div className="h-screen bg-gray-700 flex flex-col items-center justify-center text-white p-6">
         <div className="text-center space-y-8">
           <div className="text-9xl">😞</div>
           <h1 className="text-5xl font-black">Host Ayrıldı</h1>
@@ -1053,7 +1054,7 @@ function PlayerScreen() {
     const timeColor = timeLeft <= 5 ? 'text-red-500' : timeLeft <= 10 ? 'text-orange-500' : 'text-green-500';
 
     return (
-      <div className="h-screen bg-gradient-to-br from-indigo-600 to-purple-700 flex flex-col">
+      <div className="h-screen bg-indigo-700 flex flex-col">
         {/* Timer Header */}
         <div className="p-4 bg-white/10 backdrop-blur-sm">
           <div className="max-w-md mx-auto">
@@ -1100,7 +1101,7 @@ function PlayerScreen() {
 // === ANA SAYFA ===
 function HomePage() {
   return (
-    <div className="h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="h-screen bg-indigo-700 flex items-center justify-center p-6 relative overflow-hidden">
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-96 h-96 bg-purple-400 rounded-full blur-3xl opacity-30 animate-pulse"></div>
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-400 rounded-full blur-3xl opacity-30 animate-pulse delay-1000"></div>
@@ -1124,7 +1125,7 @@ function HomePage() {
           </Link>
           <Link
             to="/play"
-            className="group px-12 py-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl text-2xl font-black hover:scale-110 transition-all shadow-2xl hover:shadow-green-500/50 flex items-center justify-center gap-3"
+            className="group px-12 py-6 bg-green-600 text-white rounded-2xl text-2xl font-black hover:scale-110 transition-all shadow-2xl hover:shadow-green-500/50 flex items-center justify-center gap-3"
           >
             <Play className="w-8 h-8 group-hover:animate-pulse" />
             Öğrenci (Oyna)
