@@ -872,31 +872,18 @@ function HostScreen() {
 
         <div className="flex-1 grid grid-cols-2 gap-6 p-8">
           {currentQuestion.options.map((opt, i) => {
-            const answerCount = answerStats[i] || 0;
-            const percentage = (players?.length || 0) > 0 ? Math.round((answerCount / (players?.length || 1)) * 100) : 0;
-
             return (
               <div
                 key={i}
                 className={`${colors[i].bg} ${colors[i].shadow} rounded-3xl flex flex-col items-center justify-center text-white transition-all cursor-pointer group animate-scaleIn relative overflow-hidden`}
                 style={{ animationDelay: `${i * 150}ms` }}
               >
-                {/* Progress Bar */}
-                {answerCount > 0 && (
-                  <div className="absolute bottom-0 left-0 h-2 bg-white/50 transition-all duration-500" style={{ width: `${percentage}%` }}></div>
-                )}
-
                 <div className="text-8xl mb-4 group-hover:scale-125 transition-transform drop-shadow-2xl">
                   {colors[i].icon}
                 </div>
                 <div className="bg-black/30 backdrop-blur-sm px-8 py-4 rounded-2xl text-2xl font-bold text-center max-w-md">
                   {opt}
                 </div>
-                {answerCount > 0 && (
-                  <div className="mt-4 text-3xl font-black">
-                    {percentage}% ({answerCount})
-                  </div>
-                )}
               </div>
             );
           })}
@@ -962,15 +949,6 @@ function HostScreen() {
                   key={index}
                   className={`${colors[index].bg} rounded-3xl p-6 text-white relative overflow-hidden transition-all duration-500 ${isCorrect ? 'ring-8 ring-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}
                 >
-                  {/* Doğru cevap işareti - köşede büyük */}
-                  {isCorrect && (
-                    <div className="absolute top-4 right-4 z-20">
-                      <div className="bg-yellow-400 rounded-full p-3 animate-pulse">
-                        <span className="text-5xl">✓</span>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Background bar showing percentage */}
                   <div
                     className="absolute inset-0 bg-white/30 transition-all duration-1000"
