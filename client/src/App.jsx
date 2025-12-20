@@ -960,8 +960,17 @@ function HostScreen() {
               return (
                 <div
                   key={index}
-                  className={`${colors[index].bg} rounded-3xl p-6 text-white relative overflow-hidden transition-all duration-500`}
+                  className={`${colors[index].bg} rounded-3xl p-6 text-white relative overflow-hidden transition-all duration-500 ${isCorrect ? 'ring-8 ring-yellow-400 shadow-2xl shadow-yellow-400/50' : ''}`}
                 >
+                  {/* Doğru cevap işareti - köşede büyük */}
+                  {isCorrect && (
+                    <div className="absolute top-4 right-4 z-20">
+                      <div className="bg-yellow-400 rounded-full p-3 animate-pulse">
+                        <span className="text-5xl">✓</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Background bar showing percentage */}
                   <div
                     className="absolute inset-0 bg-white/30 transition-all duration-1000"
@@ -973,7 +982,11 @@ function HostScreen() {
                       <div className="flex items-center gap-3">
                         <span className="text-4xl">{colors[index].icon}</span>
                         <span className="font-bold text-xl">{colors[index].name}</span>
-                        {isCorrect && <span className="text-3xl">✅</span>}
+                        {isCorrect && (
+                          <span className="bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-sm font-black">
+                            DOĞRU CEVAP
+                          </span>
+                        )}
                       </div>
                       <div className="text-right">
                         <div className="text-5xl font-black">{count}</div>
