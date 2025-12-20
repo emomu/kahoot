@@ -92,6 +92,11 @@ function HostPasswordGate({ children }) {
 
       <div className="relative z-10 w-full max-w-md space-y-6 animate-slideUp">
         <div className="text-center mb-8">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img src="/vite.svg" alt="Kahoot Logo" className="w-24 h-24" />
+          </div>
+
           <div className="inline-block p-6 bg-white/10 backdrop-blur-sm rounded-full mb-4">
             <Lock className="w-16 h-16 text-white" />
           </div>
@@ -1494,6 +1499,11 @@ function HomePage() {
 
       <div className="relative z-10 text-center space-y-12 max-w-4xl">
         <div className="space-y-4 animate-fadeIn">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img src="/vite.svg" alt="Kahoot Logo" className="w-32 h-32 animate-bounce" />
+          </div>
+
           <h1 className="text-8xl font-black text-white drop-shadow-2xl tracking-tight">
             Kahoot!
           </h1>
