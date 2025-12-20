@@ -568,7 +568,15 @@ function HostScreen() {
         currentQuestion: question,
         answerStats: {}
       });
-      setHostTimeLeft(question.timeLimit || 20);
+
+      // ✅ Server'dan gelen startTime'ı kullanarak senkronize timer
+      if (question.startTime) {
+        const elapsed = (Date.now() - question.startTime) / 1000; // Geçen süre (saniye)
+        const remaining = Math.max(0, (question.timeLimit || 20) - elapsed);
+        setHostTimeLeft(Math.ceil(remaining));
+      } else {
+        setHostTimeLeft(question.timeLimit || 20);
+      }
     });
 
     socket.on("answer_stats", (data) => {
@@ -678,7 +686,8 @@ function HostScreen() {
       // ✅ Podyum ekranından çıkınca sesi durdur
       podiumSound.stop();
     }
-  }, [gameState, questionSound, scoresSound, podiumSound]);
+    // ✅ Sadece gameState değişince çalışsın, ses objeleri değişince değil
+  }, [gameState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startGame = () => {
     updateGameData({ gameState: 'loading' });
@@ -1174,7 +1183,16 @@ function PlayerScreen() {
 
     socket.on("new_question", (question) => {
       setCurrentQuestion(question);
-      setTimeLeft(question.timeLimit || 20);
+
+      // ✅ Server'dan gelen startTime'ı kullanarak senkronize timer
+      if (question.startTime) {
+        const elapsed = (Date.now() - question.startTime) / 1000; // Geçen süre (saniye)
+        const remaining = Math.max(0, (question.timeLimit || 20) - elapsed);
+        setTimeLeft(Math.ceil(remaining));
+      } else {
+        setTimeLeft(question.timeLimit || 20);
+      }
+
       setStatus("playing");
       setAnswerResult(null);
     });

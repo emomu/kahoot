@@ -182,7 +182,8 @@ io.on('connection', (socket) => {
                 io.to(pin).emit('new_question', {
                     ...game.questions[0],
                     questionNumber: 1,
-                    totalQuestions: game.questions.length
+                    totalQuestions: game.questions.length,
+                    startTime: Date.now() // ✅ Soru başlangıç zamanını gönder
                 });
             }, 2000); // 2 saniye hazırlık süresi
         }
@@ -200,7 +201,8 @@ io.on('connection', (socket) => {
             io.to(pin).emit('new_question', {
                 ...game.questions[idx],
                 questionNumber: idx + 1,
-                totalQuestions: game.questions.length
+                totalQuestions: game.questions.length,
+                startTime: Date.now() // ✅ Soru başlangıç zamanını gönder
             });
         } else {
             // Oyun bitti
